@@ -830,7 +830,7 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
    double   *pi    = NULL;//Shadow Prices for Flow Balance Constraints at nodes
    double   *slack = NULL;//Slack in flow balance constraints
    double   *dj    = NULL;//Reduced costs for arc flows
-
+   clock_t  loc_start, loc_end;
    CPXENVptr env = NULL;
    CPXNETptr net = NULL;
    int       status;
@@ -866,7 +866,7 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
       goto TERMINATE;
    }
 
-
+   loc_start = clock();
    /* Optimize the problem and obtain solution. */
    CPXsetdblparam(env,CPX_PARAM_TILIM,100);
    //CPXsetintparam(env, CPX_PARAM_NETPPRIIND, 2);
@@ -875,7 +875,7 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
       fprintf (stderr, "Failed to optimize network.\n");
       goto TERMINATE;
    }
-
+   loc_end = clock();
    /* get network dimensions */
 
    narcs  = CPXNETgetnumarcs  (env, net);
@@ -900,6 +900,9 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
 	   //getchar();
 	   
    }
+   /*else {	   
+	   printf("Solved [%d][%d] in %.4lf seconds\n", Origin_Node, Destin_Node, (double)(loc_end - loc_start) / CLOCKS_PER_SEC);
+   }*/
    if ( status ) {
       fprintf (stderr, "Failed to obtain solution.\n");
       goto TERMINATE;
@@ -976,12 +979,14 @@ static int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin
    if (MG == 1){
 	   sum_supply_i = 0;
 	   for (k = 0; k < NNODES_i; k++){
-		   supply[k] = core[Origin_Node][cand_hubs[k]] + sum_core*z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
+		   supply[k] = z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
+		   //supply[k] = core[Origin_Node][cand_hubs[k]] + sum_core*z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
 		   sum_supply_i += supply[k];
 	   }
 	   sum_supply_j = 0;
 	   for (m = 0; m < NNODES_j; m++){
-		   supply[NNODES_i + m] = -(core[Destin_Node][cand_hubs[m]] + sum_core*z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
+		   supply[NNODES_i + m] = -(z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
+		   //supply[NNODES_i + m] = -(core[Destin_Node][cand_hubs[m]] + sum_core*z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
 		   sum_supply_j += supply[NNODES_i + m];
 	   }
    }

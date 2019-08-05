@@ -79,6 +79,7 @@ void Benders_root_node_heur(void)
 	int      iter = 0;
 	int count_cover_cuts = 0;
 	int count_Fenchel_cuts = 0;
+	clock_t loc_start, loc_end;
 
 	/*******************************/
 	cand_cover = create_int_vector(NN);
@@ -334,7 +335,8 @@ void Benders_root_node_heur(void)
    i_vector(&matind, NN, "open_cplex:6");
    d_vector(&matval, NN, "open_cplex:7");
    count_fixed = 0;
-
+   loc_start = clock();
+   //start = clock();
 										//Cutting plane algorithm for solving the root node
    do{
 		   status = CPXlpopt(env, lp);
@@ -384,6 +386,9 @@ void Benders_root_node_heur(void)
 				   }
 				   printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
 				   Define_Core_Point();
+			   }
+			   else {
+				   printf("No hubs were fixed via reduced cost elimination tests.\n");
 			   }
 		   }
 
@@ -449,6 +454,9 @@ void Benders_root_node_heur(void)
 				   printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
 				   Define_Core_Point();
 			   }
+			   else {
+				   printf("No hubs were fixed in partial enumeration\n");
+			   }
 		   }
 	   if(flag_fixed==1){
 		   status = CPXlpopt(env, lp);
@@ -465,12 +473,16 @@ void Benders_root_node_heur(void)
 
 	   if (vers!=3)
 		   Update_Core_Point(x);
+	   printf("Separating more optimality cuts\n");
+	   //getchar();
 	   for (i = 0; i<NN; i++){
 		   for (j = i; j<NN; j++){
 			   Check_CP_MW(x, i, j);
 			   status = NetFlow_TP(x, i, j);
 		   }
 	   }
+	   printf("Finished sperating optimality cuts\n");
+	   //getchar();
 	   initial_cuts[count_added].sense[index1] = 'G';
 	   initial_cuts[count_added].rhs[index1] = 0;
 	   initial_cuts[count_added].beg[index1++] = index;

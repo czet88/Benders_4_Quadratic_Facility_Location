@@ -538,7 +538,6 @@ void Benders_root_node(void)
 	   flag_added = 0;
 	   index = 0;
 	   index1 = 0;
-	  // printf("Separating more optimality cuts\n");
 	   if (vers!=3) //modifiedy by ivan 5172019
 		   Update_Core_Point(x); //modifiedy by ivan 5172019
 	   for (i = 0; i<NN; i++){
