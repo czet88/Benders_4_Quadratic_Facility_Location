@@ -869,6 +869,9 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
    loc_start = clock();
    /* Optimize the problem and obtain solution. */
    CPXsetdblparam(env,CPX_PARAM_TILIM,100);
+   CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_ON); //output display
+    //CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
+    CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,5); //different levels of output display
    //CPXsetintparam(env, CPX_PARAM_NETPPRIIND, 2);
    status = CPXNETprimopt (env, net);
    if ( status ) {
@@ -889,6 +892,7 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
 	   missed++;
 	   printf("solstat: %d \n", solstat);
 	   printf("Warning: sum_supply: %.4f sum_demand: %.4f \n", sum_supply_j, sum_supply_i);
+	   status = CPXNETwriteprob(env, net, "netex1.net", NULL);
 	   //CPXwriteprob(env, net, "LPError.lp", NULL);
 	   printf("Now printed the LP with problems\n");
 	   getchar();
@@ -979,14 +983,14 @@ static int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin
    if (MG == 1){
 	   sum_supply_i = 0;
 	   for (k = 0; k < NNODES_i; k++){
-		   supply[k] = z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
-		   //supply[k] = core[Origin_Node][cand_hubs[k]] + sum_core*z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
+		   //supply[k] = z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
+		   supply[k] = core[Origin_Node][cand_hubs[k]] + sum_core*z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
 		   sum_supply_i += supply[k];
 	   }
 	   sum_supply_j = 0;
 	   for (m = 0; m < NNODES_j; m++){
-		   supply[NNODES_i + m] = -(z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
-		   //supply[NNODES_i + m] = -(core[Destin_Node][cand_hubs[m]] + sum_core*z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
+		   //supply[NNODES_i + m] = -(z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
+		   supply[NNODES_i + m] = -(core[Destin_Node][cand_hubs[m]] + sum_core*z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
 		   sum_supply_j += supply[NNODES_i + m];
 	   }
    }
@@ -1119,7 +1123,7 @@ void Define_Core_Point(void)
 	int i, k;
 	double precount, epsilon;
 	
-	if(hybrid==0 || hybrid==3){
+	if(hybrid==0 || hybrid==3){								/////Here we want to check to see if it is a p median problem or not
 		precount=(double) (p_hubs*1.0/(count_cand_hubs));
 		epsilon = (double)(1 / (2 * count_cand_hubs));
 		//printf("Precount=%lf\n",precount);
@@ -1194,19 +1198,6 @@ void Update_Core_Point(double *z_sol){
   double sum_i, sum_j;
   double fact=0.5;		
 
-  for (i = 0; i < NN; i++) {
-	  for (j = i; j < NN; j++) {
-		  sum_i = 0;
-		  sum_j = 0;
-		  for (k = 0; k < count_cand_hubs; k++)
-			  sum_i += core[i][cand_hubs[k]];
-		  for (m = 0; m < count_cand_hubs; m++)
-			  sum_j += core[j][cand_hubs[m]];
-		  if (ABS(sum_i - sum_j) > 0.0001)
-			  printf("something wrong with core point: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
-	  }
-  }
-
   for (i = 0; i < NN; i++){
 	  for (k = 0; k < count_cand_hubs; k++){
 		//  if (z_sol[pos_z[i][cand_hubs[k]]] > 0.0001)
@@ -1226,8 +1217,6 @@ void Update_Core_Point(double *z_sol){
 			  printf("something wrong with core point: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
 	  }
   }
-
-
 }
 
 void Update_CP_MW(double *z_sol,int i, int j){
