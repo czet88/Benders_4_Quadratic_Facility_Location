@@ -1155,7 +1155,7 @@ void Define_Core_Point(void)
 						//printf("corepoint=%lf\n",core[i][k]);
 						sum_core += core[i][k];
 					}
-				}
+			 }
 			}
 		}
 	}
