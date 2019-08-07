@@ -608,6 +608,7 @@ mycutcallback (CPXCENVptr env,
    double   epsilon_LP = 100.0;
    int      oldnodeid = cutinfo->nodeid;
    double   oldnodeobjval = cutinfo->nodeobjval;
+   int		IsIntFeas=0; //flag to let us know that the current solution is integer feasible
 
    *useraction_p = CPX_CALLBACK_DEFAULT; 
 
@@ -697,6 +698,7 @@ mycutcallback (CPXCENVptr env,
    if(wherefrom == CPX_CALLBACK_MIP_CUT_FEAS){
 	 flag_solve_SP = 1;
 	 tolerance_sep = -0.000000000001;
+	 IsIntFeas = 1;
 	 //tolerance_sep = -0.001;
    }
    else{
@@ -722,7 +724,7 @@ mycutcallback (CPXCENVptr env,
        goto TERMINATE;
      }
 
-	 if(vers!=3) //modifiedy by ivan 5172019
+	 if(vers!=3 && IsIntFeas==0) //modifiedy by ivan 5172019
 	   Update_Core_Point(x); //modifiedy by ivan 5172019
 	//printf("Started separating\n");
      for(i=0;i<NN;i++){                                 //Solve (i,j) primal/dual subproblems
@@ -869,10 +871,13 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
    loc_start = clock();
    /* Optimize the problem and obtain solution. */
    CPXsetdblparam(env,CPX_PARAM_TILIM,100);
-   CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_ON); //output display
+   //CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_ON); //output display
     //CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
-    CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,5); //different levels of output display
+    //CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,5); //different levels of output display
    //CPXsetintparam(env, CPX_PARAM_NETPPRIIND, 2);
+   //status = CPXNETwriteprob(env, net, "netex1.net", NULL);
+   //printf("Printed stuff\n");
+   //getchar();
    status = CPXNETprimopt (env, net);
    if ( status ) {
       fprintf (stderr, "Failed to optimize network.\n");
@@ -893,7 +898,6 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
 	   printf("solstat: %d \n", solstat);
 	   printf("Warning: sum_supply: %.4f sum_demand: %.4f \n", sum_supply_j, sum_supply_i);
 	   status = CPXNETwriteprob(env, net, "netex1.net", NULL);
-	   //CPXwriteprob(env, net, "LPError.lp", NULL);
 	   printf("Now printed the LP with problems\n");
 	   getchar();
 	  // printf("Warning did not solve status=%d for %d and %d\n", solstat, Origin_Node, Destin_Node); 
