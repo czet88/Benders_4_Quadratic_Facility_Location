@@ -608,6 +608,7 @@ mycutcallback (CPXCENVptr env,
    double   epsilon_LP = 100.0;
    int      oldnodeid = cutinfo->nodeid;
    double   oldnodeobjval = cutinfo->nodeobjval;
+   int		Flag_Integer=0;
 
    *useraction_p = CPX_CALLBACK_DEFAULT; 
 
@@ -697,6 +698,7 @@ mycutcallback (CPXCENVptr env,
    if(wherefrom == CPX_CALLBACK_MIP_CUT_FEAS){
 	 flag_solve_SP = 1;
 	 tolerance_sep = -0.000000000001;
+	 Flag_Integer = 1;
 	 //tolerance_sep = -0.001;
    }
    else{
@@ -722,7 +724,7 @@ mycutcallback (CPXCENVptr env,
        goto TERMINATE;
      }
 
-	 if(vers!=3) //modifiedy by ivan 5172019
+	 if(vers!=3 && Flag_Integer==1) //modifiedy by ivan 5172019
 	   Update_Core_Point(x); //modifiedy by ivan 5172019
 	//printf("Started separating\n");
      for(i=0;i<NN;i++){                                 //Solve (i,j) primal/dual subproblems
