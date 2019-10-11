@@ -348,7 +348,9 @@ void Benders_root_node_heur(void)
 		   }*/
 
 										//Run heuristc using info from fractional solution x
+		   printf("Started solving heuristic\n");
 		   status = Construct_Feasible_Solution(x,dj);
+		   printf("Finished solving heuristic.\nStarted variable fixing\n");
 
 		   /*for (i = 0; i < NN; i++) {
 			   for (k = 0; k < NN; k++) {
@@ -390,6 +392,7 @@ void Benders_root_node_heur(void)
 										 //Partial Enumeration phase: solve LPs to try to remove potential locations
 
 		   if ((iter>10 && iter % 3 == 0 && vers != 4 && hybrid == 0) || (hybrid == 1 && iter>0 && iter % 3 == 0)){
+			   printf("Entered partial enumeration phase\n");
 			   flag_fixed = 0;
 			   count_c = 0;
 			   for (k = 0; k < NN; k++){
@@ -439,7 +442,7 @@ void Benders_root_node_heur(void)
 					   //	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 				   }
 			   }
-
+			   printf("Finished partial enumeration phase\n");
 			   if (flag_fixed == 1){
 				   count_cand_hubs = 0;
 				   for (k = 0; k < NN; k++){
@@ -463,6 +466,7 @@ void Benders_root_node_heur(void)
 	   index = 0;
 	   index1 = 0;
 
+	   printf("Starting to separate Benders cuts\n");
 	   if (vers!=3)
 		   Update_Core_Point(x);
 	   for (i = 0; i<NN; i++){
@@ -471,6 +475,7 @@ void Benders_root_node_heur(void)
 			   status = NetFlow_TP(x, i, j);
 		   }
 	   }
+	   printf("Finished separating Benders cuts.");
 	   initial_cuts[count_added].sense[index1] = 'G';
 	   initial_cuts[count_added].rhs[index1] = 0;
 	   initial_cuts[count_added].beg[index1++] = index;
@@ -622,7 +627,8 @@ void Benders_root_node_heur(void)
 				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 			}
 		}
-
+		printf("Ended phase fix 0\n Started phase fix 1\n");
+		
 		//Partial Enumeration phase part II: Try to permanently close a set of hubs
 		for (k = 0; k < count_c; k++){  						// Temporarily fix z_kk = 1 to try to permantely open it (i.e. z_k = 0 from now on)
 			index = 0;
@@ -661,6 +667,7 @@ void Benders_root_node_heur(void)
 				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 			}
 		}
+		printf("Ended phase fix 1\n");
 		
 		count_cand_hubs = 0;
 		for (k = 0; k < NN; k++){
