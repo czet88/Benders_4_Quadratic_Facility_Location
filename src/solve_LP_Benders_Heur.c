@@ -334,24 +334,17 @@ void Benders_root_node_heur(void)
    i_vector(&matind, NN, "open_cplex:6");
    d_vector(&matval, NN, "open_cplex:7");
    count_fixed = 0;
+   //Solve the LP relaxation for the first time
+   status = CPXlpopt(env, lp);
+   if (status) fprintf(stderr, "Failed to optimize LP.\n");
+   CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
 
+   //Run heuristc using info from fractional solution x
+   printf("Started solving heuristic\n");
+   status = Construct_Feasible_Solution(x, dj);
+   printf("Finished solving heuristic.\nStarted variable fixing\n");
 										//Cutting plane algorithm for solving the root node
    do{
-		   status = CPXlpopt(env, lp);
-		   if (status) fprintf(stderr, "Failed to optimize LP.\n");
-		   CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
-		 /*  for (i = 0; i < NN; i++) {
-			   for (k = 0; k < NN; k++) {
-				   if (x[pos_z[i][k]] > 0.001)
-					   printf("z(%d %d): %.2f \n", i, k, x[pos_z[i][k]]);
-			   }
-		   }*/
-
-										//Run heuristc using info from fractional solution x
-		   printf("Started solving heuristic\n");
-		   status = Construct_Feasible_Solution(x,dj);
-		   printf("Finished solving heuristic.\nStarted variable fixing\n");
-
 		   /*for (i = 0; i < NN; i++) {
 			   for (k = 0; k < NN; k++) {
 				   if (x[pos_z[i][k]] > 0.001)
@@ -388,19 +381,20 @@ void Benders_root_node_heur(void)
 				   Define_Core_Point();
 			   }
 		   }
+		   printf("Finished variable fixing.\n");
 
-										 //Partial Enumeration phase: solve LPs to try to remove potential locations
+		   count_c = 0;
+		   for (k = 0; k < NN; k++) {
+			   if (fixed_zero[k] == 0 && x[pos_z[k][k]] <= 0.2) {
+				   z_closed[count_c].k = k;
+				   z_closed[count_c++].value = f[k][0];
+			   }
+		   }
+		   //Partial Enumeration phase: solve LPs to try to remove potential locations
 
-		   if ((iter>10 && iter % 3 == 0 && vers != 4 && hybrid == 0) || (hybrid == 1 && iter>0 && iter % 3 == 0)){
+		   if (count_c<NN/4){
 			   printf("Entered partial enumeration phase\n");
 			   flag_fixed = 0;
-			   count_c = 0;
-			   for (k = 0; k < NN; k++){
-				   if (fixed_zero[k] == 0 && x[pos_z[k][k]] <= 0.2){
-					   z_closed[count_c].k = k;
-					   z_closed[count_c++].value = f[k][0];
-				   }
-			   }
 			   qsort((ZVAL *)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
 
 			   cur_rows = CPXgetnumrows(env, lp);

@@ -240,3 +240,4 @@ void Benders_BC(void);
  double UBOptUFLP;//Upper bound obtained from optimal of UFLP
 
  int FlagsingInd; //Flag that will let us know that we are solving Single Index.
+ int  *FlagHubLPsupport; // array of flags stating whether the potential hub is being considered or not for the reduced problem.
