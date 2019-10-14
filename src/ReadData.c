@@ -267,6 +267,7 @@ void initialize_memory(void) {
   countsols=0;
   prevsols=(Solpool *) calloc(NN, sizeof(Solpool));
   prevsols[countsols].indhub=create_int_vector(NN);
+  FlagHubLPsupport = create_int_vector(NN);
   /*********************************************************/
   
   best_sol_facilities = create_int_vector(NN);
@@ -320,6 +321,7 @@ void free_memory(void)
 {
   int i,j;
 
+  free(FlagHubLPsupport);
   for (i = 0; i < NN; i++){
 	  free(f[i]);
 	  free(b[i]);

@@ -26,6 +26,7 @@
 #define FALSE 0
 #define NOT_AVAIL -1
 #define NONE -1
+#define MIN(a, b) (((a) > (b)) ? (b) : (a))
 
 #define rand_double()(rand()/(double) RAND_MAX) // new added
 
@@ -166,6 +167,9 @@ static int buildRealNetwork (CPXENVptr , CPXNETptr , double *, int , int );
 void Define_Core_Point(void);
 void Update_Core_Point(double *);
 void Original_Model(void);
+
+void PopulateLPSupport(double* x);
+int CompareLPSupport(double* x);
 
 static int CPXPUBLIC 
    mycutcallback (CPXCENVptr env, void *cbdata, int wherefrom,
