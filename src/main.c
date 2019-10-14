@@ -123,7 +123,8 @@ int main (int argc, char *argv[])
 
 	 //Original_Model();  //Solve four-index formulation directly with CPLEX
 	 free_memory();
-	 //getchar();
+	 printf("Finished solving\n");
+	 getchar();
  }
  fclose(ini);
  
