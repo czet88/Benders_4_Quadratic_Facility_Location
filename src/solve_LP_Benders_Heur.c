@@ -414,7 +414,7 @@ void Benders_root_node_heur(void)
 		}
 		//Partial Enumeration phase: solve LPs to try to remove potential locations
 
-		if (iter>0 /*&& iter % 3 == 0*/ && vers != 4 && ((UpperBound - value) / UpperBound * 100< 2.0 && flag_fixed==1) ){
+		if (((UpperBound - value) / UpperBound * 100< 1.5 && flag_fixed==1) ){
 			printf("Entered partial enumeration phase\n");
 			flag_fixed = 0;
 			qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
