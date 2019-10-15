@@ -538,7 +538,7 @@ void Benders_root_node_heur(void)
 		printf("Starting to separate Benders cuts\n");
 		if (vers != 3) {
 			Define_Core_Point();
-			//Update_Core_Point(x);
+			Update_Core_Point(x);
 		}
 		for (i = 0; i < NN-1; i++) {
 			for (j = i+1; j < NN; j++) {

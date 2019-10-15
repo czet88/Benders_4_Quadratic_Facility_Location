@@ -980,19 +980,13 @@ int buildNetwork(CPXENVptr env, CPXNETptr net, double* z_sol, int Origin_Node, i
 
 	
 	for (k = 0; k < NN; k++) {
-		if (not_eligible_hub[Origin_Node][cand_hubs[k]] == 0) {						
-			index_hub_oi[NNODES_i] = cand_hubs[k];
+		if (not_eligible_hub[Origin_Node][k] == 0) {						
+			index_hub_oi[NNODES_i] = k;
 			NNODES_i++;
 			NNODES++;
 		}
-		else {
-			if (z_sol[pos_z[Origin_Node][cand_hubs[k]]] > 0.001) {
-				printf("There was %lf here\n", z_sol[pos_z[Origin_Node][cand_hubs[k]]]);
-				getchar();
-			}
-		}
-		if (not_eligible_hub[Destin_Node][cand_hubs[k]] == 0) {
-			index_hub_dj[NNODES_j] = cand_hubs[k]; 
+		if (not_eligible_hub[Destin_Node][k] == 0) {
+			index_hub_dj[NNODES_j] = k; 
 			NNODES_j++;
 			NNODES++;
 		}
