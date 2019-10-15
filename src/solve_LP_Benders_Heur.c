@@ -430,26 +430,28 @@ void Benders_root_node_heur(void)
 		}
 		printf("Finished elimination test.\n");
 
-		count_c = 0;
-		for (k = 0; k < count_cand_hubs; k++) {
-			if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
-				z_closed[count_c].k = cand_hubs[k];
-				z_closed[count_c].value = f[cand_hubs[k]][0]*(1-x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-				for (i = 0; i < NN; i++) {
-					z_closed[count_c].value += (O[i] * c_c[i][cand_hubs[k]] + D[i] * c_d[i][cand_hubs[k]]) * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-				}
-				count_c++;
-			}
-		}
+		
 		//Partial Enumeration phase: solve LPs to try to remove potential locations
 
 		if (((UpperBound - value) / UpperBound * 100< 2.0 && flag_fixed==1) ){
+			count_c = 0;
+			for (k = 0; k < count_cand_hubs; k++) {
+				if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
+					z_closed[count_c].k = cand_hubs[k];
+					z_closed[count_c].value = f[cand_hubs[k]][0] * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
+					for (i = 0; i < NN; i++) {
+						z_closed[count_c].value += (O[i] * c_c[i][cand_hubs[k]] + D[i] * c_d[i][cand_hubs[k]]) * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
+					}
+					count_c++;
+				}
+			}
+
 			printf("Entered partial enumeration phase to check %d of them\n", count_c);
 			flag_fixed = 0;
 			qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
 			cur_rows = CPXgetnumrows(env, lp);
 			for (k = 0; k < count_c; k++) {  			// Temporarily fix z_kk = 1 to try to permantely close it (i.e. z_k = 0 from now on)
-				printf("testing hub %d with value %lf", z_closed[k].k, z_closed[k].value);
+				printf("Testing hub %d with value %lf ", z_closed[k].k, z_closed[k].value);
 				index = 0;
 				index1 = 0;
 				sense[index1] = 'E';
@@ -510,8 +512,8 @@ void Benders_root_node_heur(void)
 		printf("Starting to separate Benders cuts\n");
 		if (vers != 3)
 			Update_Core_Point(x);
-		for (i = 0; i < NN; i++) {
-			for (j = i; j < NN; j++) {
+		for (i = 0; i < NN-1; i++) {
+			for (j = i+1; j < NN; j++) {
 				Check_CP_MW(x, i, j);
 				status = NetFlow_TP(x, i, j);
 			}
@@ -861,8 +863,8 @@ TERMINATE:
 	free(indices);
 	free(priority);
 	free(cand_hubs);
-	//free(fixed_one);
-	//free(fixed_zero);
+	free(fixed_one);
+	free(fixed_zero);
 }
 
 
