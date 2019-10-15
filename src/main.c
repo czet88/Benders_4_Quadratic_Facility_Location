@@ -85,7 +85,7 @@ int main (int argc, char *argv[])
  t = time(NULL);
  tm = localtime(&t);
  out = open_file(output_text, "a+");
- fprintf(out, "\n %s\n Vers; instance; APset; Cap; p; hybrid; LBUFLP; UBsearchUFLP; UBoptUFLP; UBafterHeur; cpu_heur; LBafterfix; cputime_fixed;  num_fixed; num_iterations; cutsLP; LB; UB; time_BC; BBnodes; optimal hubs; cpu_all; missed\n", asctime(tm));
+ fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed\n", asctime(tm));
  fclose(out);
  for(i=0; i<num_inst; i++) {
 	 use_firstsolution=1;
@@ -105,9 +105,9 @@ int main (int argc, char *argv[])
 	 //if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
 	 //end = clock();
 	 //cputime_heur = (double)(end - start) / CLOCKS_PER_SEC;
-	 //out = open_file(output_text, "a+");
-	 //fprintf(out, "%d; %s ;%d ;%d ;%d ;%d ;%.2lf; %.2f ;%.2f; %.2f; %.2f;  ", vers, instance, APset, Capacitated_instances, p_hubs, hybrid, UFLPrelval, UBsearchUFLP, UBOptUFLP, UpperBound, cputime_heur);
-	 //fclose(out);
+	 out = open_file(output_text, "a+");
+	 fprintf(out, "%d;%s;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid);
+	 fclose(out);
 	 //Solve root node
 	 Benders_root_node_heur();
 	 //Benders_root_node();
@@ -123,7 +123,7 @@ int main (int argc, char *argv[])
 	 //Original_Model();  //Solve four-index formulation directly with CPLEX
 	 free_memory();
 	 printf("Finished solving\n");
-	 getchar();
+	 //getchar();
  }
  fclose(ini);
  

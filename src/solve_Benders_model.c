@@ -540,7 +540,7 @@ void Benders_BC(void)
     index=0;
 
 	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;  %.2f; %.2f; %d; ", best_lower_bound, best_upper_bound, cputime, nodecount);
+	fprintf(out, "%.2f;  %.2f; %.2f; %d; ", best_upper_bound, best_lower_bound,  cputime, nodecount);
 	
 	printf("Optimal set of hubs: ");
 	fprintf(out, "hubs:");

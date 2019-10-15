@@ -385,12 +385,6 @@ void Benders_root_node_heur(void)
 
 	//Cutting plane algorithm for solving the root node
 	do {
-		/*for (i = 0; i < NN; i++) {
-			for (k = 0; k < NN; k++) {
-				if (x[pos_z[i][k]] > 0.001)
-					printf("z(%d %d): %.2f \n", i, k, x[pos_z[i][k]]);
-			}
-		}*/
 		//Simple variable fixing test with reduced cost coefficients
 		
 		printf("Starting elimination test\n");
@@ -769,7 +763,7 @@ void Benders_root_node_heur(void)
 	printf("Root node LP bound after PE: %.2f \n PE Time: %.2f \n Hubs fixed: %d \n", value, cputime, count_fixed);
 
 	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f ; %.2f; %d; %d; %d; ", value, cputime, count_fixed,iter,count_added);
+	fprintf(out, "%.2lf;%.2f;%.2f;%d;%d;", UpperBound, value, cputime,iter, count_fixed);
 	fclose(out);
 
 	free(matbeg);
@@ -845,8 +839,7 @@ void Benders_root_node_heur(void)
 	index = 0;
 
 	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;  %.2f; %.2f; %d; ", best_lower_bound, best_upper_bound, cputime, nodecount);
-
+	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound,  cputime, (best_upper_bound-best_lower_bound)*100/ best_upper_bound, nodecount);
 	printf("Optimal set of hubs: ");
 	fprintf(out, "hubs:");
 	for (i = 0; i < NN; i++) {
