@@ -45,8 +45,7 @@
  ORD        *ord_O;
  ORD        *ord_D;
  double     sum_supply_i, sum_supply_j;
- int        *best_sol_facilities;
- int        *best_sol_assignments;
+ 
  
 
  double     old_objval = 0;
@@ -112,7 +111,7 @@ int main (int argc, char *argv[])
 	 //Solve root node
 	 Benders_root_node_heur();
 	 //Benders_root_node();
-	 Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
+	 //Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
 	 end = clock();
 	 cputime = (double)(end - start) / CLOCKS_PER_SEC;
 	 printf("\nFInal CPU time: %.2lf\n", cputime);

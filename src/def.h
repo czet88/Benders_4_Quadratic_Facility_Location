@@ -170,27 +170,27 @@ void Original_Model(void);
 
 void PopulateLPSupport(double* x);
 int CompareLPSupport(double* x);
+int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp);
 
-static int CPXPUBLIC 
+int CPXPUBLIC 
    mycutcallback (CPXCENVptr env, void *cbdata, int wherefrom,
                   void *cbhandle, int *useraction_p);
 
-static int CPXPUBLIC
+int CPXPUBLIC
 Newcutcallback(CPXCENVptr env, void *cbdata, int wherefrom,
 	void *cbhandle, int *useraction_p);
 
 
-static int CPXPUBLIC 
+int CPXPUBLIC 
    mycheckcallback (CPXCENVptr env, void *cbdata, int wherefrom,
                   void *cbhandle, int *useraction_p);
 
 
 /****Carlos modification****/
-static int CPXPUBLIC Heur(CPXCENVptr env, void *cbdata, int wherefrom,  void *cbhandle, double *objval_p, double *x, int *checkfeas_p, int *useraction_p);
+int CPXPUBLIC Heur(CPXCENVptr env, void *cbdata, int wherefrom,  void *cbhandle, double *objval_p, double *x, int *checkfeas_p, int *useraction_p);
 void Update_CP_MW(double *z_sol,int i, int j);
 
-static void
-   free_and_null (char **ptr);
+void  free_and_null (char **ptr);
 
 
 int Comparevalue_ord(const void *, const void *);
@@ -245,3 +245,8 @@ void Benders_BC(void);
 
  int FlagsingInd; //Flag that will let us know that we are solving Single Index.
  int  *FlagHubLPsupport; // array of flags stating whether the potential hub is being considered or not for the reduced problem.
+ int* globvarind;  //Array containing all the Types for the complete model
+ char* globvarctype;  //Array containing all the Types for the complete model
+ int  glob_numcols;
+ int* best_sol_facilities;
+ int* best_sol_assignments;

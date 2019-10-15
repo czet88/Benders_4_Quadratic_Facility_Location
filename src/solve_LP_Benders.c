@@ -388,7 +388,7 @@ void Benders_root_node(void)
     //CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_OFF); //output display
     //CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,3); //different levels of output display
     CPXsetdblparam(env,CPX_PARAM_TILIM,86400); // time limit
-    CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
+    //CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
 	CPXsetintparam(env,CPX_PARAM_THREADS, 1); // Number of threads to use
 	//CPXsetintparam(env,CPX_PARAM_NUMERICALEMPHASIS,1); //Numerical precision of the time
 	//CPXsetdblparam(env,CPX_PARAM_EPRHS, 0.0000001);

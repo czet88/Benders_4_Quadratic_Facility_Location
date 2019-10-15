@@ -29,6 +29,29 @@ extern  double     sum_supply_i, sum_supply_j;
 //extern int Capacitated_instances;
 //extern int        *best_assigmnent;
 
+int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp) {	//Here we will set the branch and cut parameters.
+	int acumstatus = 0;
+	//Here we are changing the variable types so that we can solve as a MIP
+	/************************************************/
+	acumstatus += CPXchgctype(env, lp, glob_numcols, globvarind, globvarctype);
+
+	//CPLEX Branch and cut parameters (Not Fine-Tuned yet)
+	/************************************************/
+	CPXchgobjsen(env, lp, CPX_MIN);
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
+	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 3); //different levels of output display
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.0000001); // e-optimal solution (%gap)
+	//CPXsetdblparam(env, CPX_PARAM_CUTSFACTOR, 1.0); // add cuts or not
+	//CPXsetdblparam(env, CPXPARAM_MIP_Tolerances_MIPGap, 0.05);
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); //output display
+	acumstatus += CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);											/* Do not use presolve */
+	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL); 					/* Turn on traditional search for use with control callbacks */
+	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);									 /* Let MIP callbacks work on the original model */
+
+	return 0;
+}
+
 void Benders_BC(void)
 {
 	int i,j,k,l,m,r, count;
@@ -570,7 +593,7 @@ void Benders_BC(void)
 
 
 
-static int CPXPUBLIC 
+int CPXPUBLIC 
 mycutcallback (CPXCENVptr env,
                void       *cbdata,
                int        wherefrom,
@@ -729,6 +752,7 @@ mycutcallback (CPXCENVptr env,
 	//printf("Started separating\n");
      for(i=0;i<NN;i++){                                 //Solve (i,j) primal/dual subproblems
        for(j = i;j<NN;j++){
+		   printf("Separating %d and %d\n", i, j);
 		   //if(MG==1) Update_CP_MW(x,i,j);
 		   Check_CP_MW(x, i, j); //modifiedy by ivan 5172019
 		   //sum_core=2;
@@ -809,7 +833,7 @@ TERMINATE:
 /* This simple routine frees up the pointer *ptr, and sets *ptr
    to NULL */
 
-static void free_and_null (char **ptr)
+void free_and_null (char **ptr)
 {
    if ( *ptr != NULL ) {
       free (*ptr);
@@ -943,7 +967,7 @@ TERMINATE:
 }  /* END main */
 
 
-static int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
+int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
 {
    int status = 0;
    int k,m;
@@ -1057,7 +1081,7 @@ TERMINATE:
 
 }  /* END buildnetwork */
 
-static int buildRealNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
+int buildRealNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
 {
    int status = 0;
    int k,m;
@@ -1323,7 +1347,7 @@ void Check_CP_MW(double *z_sol,int i, int j){
 	free(values_hub);
 }
 
-static int CPXPUBLIC Heur (CPXCENVptr env, void  *cbdata, int wherefrom, void *cbhandle, double  *objval_p, double *x, int *checkfeas_p,int *useraction_p)
+int CPXPUBLIC Heur (CPXCENVptr env, void  *cbdata, int wherefrom, void *cbhandle, double  *objval_p, double *x, int *checkfeas_p,int *useraction_p)
 {
    int status = 0; 
    int depth, SEQNUM;
