@@ -427,7 +427,7 @@ void SSCFLP_model(void)
 
 }
 
-static int CPXPUBLIC 
+int CPXPUBLIC 
 mycheckcallback (CPXCENVptr env,
                void       *cbdata,
                int        wherefrom,

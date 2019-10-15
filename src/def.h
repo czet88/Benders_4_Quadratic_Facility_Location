@@ -181,8 +181,7 @@ Newcutcallback(CPXCENVptr env, void *cbdata, int wherefrom,
 	void *cbhandle, int *useraction_p);
 
 
-int CPXPUBLIC 
-   mycheckcallback (CPXCENVptr env, void *cbdata, int wherefrom,
+int CPXPUBLIC mycheckcallback (CPXCENVptr env, void *cbdata, int wherefrom,
                   void *cbhandle, int *useraction_p);
 
 
