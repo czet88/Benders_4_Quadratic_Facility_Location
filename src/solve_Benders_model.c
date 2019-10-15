@@ -747,12 +747,15 @@ mycutcallback (CPXCENVptr env,
        goto TERMINATE;
      }
 
-	 if(vers!=3 && Flag_Integer==1) //modifiedy by ivan 5172019
-	   Update_Core_Point(x); //modifiedy by ivan 5172019
+	 if (vers != 3 && Flag_Integer == 1) { //modifiedy by ivan 5172019
+		 //Define_Core_Point();
+		 Update_Core_Point(x); //modifiedy by ivan 5172019		 
+	 }
+	 
 	//printf("Started separating\n");
      for(i=0;i<NN-1;i++){                                 //Solve (i,j) primal/dual subproblems
        for(j = i+1;j<NN;j++){
-		   printf("Separating %d and %d\n", i, j);
+		   //printf("Separating %d and %d\n", i, j);
 		   //if(MG==1) Update_CP_MW(x,i,j);
 		   Check_CP_MW(x, i, j); //modifiedy by ivan 5172019
 		   //sum_core=2;

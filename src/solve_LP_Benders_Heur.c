@@ -402,6 +402,8 @@ void Benders_root_node_heur(void)
 					//printf("Fix z[%d] = 0  obj+redcost:%.5f  UB:%.5f \n", cand_hubs[i] + 1, value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]], UpperBound);
 					fixed_zero[cand_hubs[i]] = 1;
 					bind[0] = pos_z[cand_hubs[i]][cand_hubs[i]];
+					realub[0] = 0;
+					btype[0] = 'U';
 					status = CPXchgbds(env, lp, 1, bind, btype, realub);
 					if (status) fprintf(stderr, "CPXchange bounds failed.\n");
 					count_fixed++;
@@ -411,6 +413,8 @@ void Benders_root_node_heur(void)
 					for (k = 0; k < NN; k++) {
 						if (not_eligible_hub[k][cand_hubs[i]] == 0) {
 							bind[0] = pos_z[k][cand_hubs[i]];
+							realub[0] = 0;
+							btype[0] = 'U';
 							status = CPXchgbds(env, lp, 1, bind, btype, realub);
 							not_eligible_hub[k][cand_hubs[i]] = 1;
 							eli_per_com[k]--;
@@ -423,6 +427,8 @@ void Benders_root_node_heur(void)
 						if (not_eligible_hub[k][cand_hubs[i]] == 0 && value + dj[pos_z[k][cand_hubs[i]]] > UpperBound + 0.01) {
 							assign_fixed++;
 							bind[0] = pos_z[k][cand_hubs[i]];
+							realub[0] = 0;
+							btype[0] = 'U';
 							CPXchgbds(env, lp, 1, bind, btype, realub);
 							not_eligible_hub[k][cand_hubs[i]] = 1;
 							eli_per_com[k]--;
@@ -492,6 +498,8 @@ void Benders_root_node_heur(void)
 					printf("Fixed z[%d] = 0 \n", z_closed[k].k + 1);
 					fixed_zero[z_closed[k].k] = 1;
 					bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
+					realub[0] = 0;
+					btype[0] = 'U';
 					CPXchgbds(env, lp, 1, bind, btype, realub);
 					count_fixed++;
 					flag_fixed = 1;
@@ -691,17 +699,12 @@ void Benders_root_node_heur(void)
 			//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
 			if (value > UpperBound){
 				//printf("Fix z[%d] = 1 \n", z_open[k].k+1);
+				bind[0] = pos_z[z_open[k].k][z_open[k].k];
+				btype[0] = 'B';
+				realub[0] = 1;
+				CPXchgbds(env, lp, 1, bind, btype, realub);				
 				fixed_one[z_open[k].k] = 1;
-				index = 0;
-				index1 = 0;
-				sense[index1] = 'E';
-				rhs[index1] = 1;
-				matbeg[index1++] = index;
-				matind[index] = pos_z[z_open[k].k][z_open[k].k];
-				matval[index++] = 1;
-				status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
 				if (status) fprintf(stderr, "CPXaddrows failed.\n");
-				cur_rows++;
 				count_fixed++;
 				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 			}
@@ -732,16 +735,18 @@ void Benders_root_node_heur(void)
 			if (value > UpperBound){
 				//printf("Fix z[%d] = 0 \n", z_closed[k].k+1);
 				fixed_zero[z_closed[k].k] = 1;
-				index = 0;
-				index1 = 0;
-				sense[index1] = 'E';
-				rhs[index1] = 0;
-				matbeg[index1++] = index;
-				matind[index] = pos_z[z_closed[k].k][z_closed[k].k];
-				matval[index++] = 1;
-				status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-				if (status) fprintf(stderr, "CPXaddrows failed.\n");
-				cur_rows++;
+				bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
+				btype[0] = 'U';
+				realub[0] = 0;
+				CPXchgbds(env, lp, 1, bind, btype, realub);
+				count_fixed++;
+				flag_fixed = 1;
+				for (i = 0; i < NN; i++) {
+					if (not_eligible_hub[i][z_closed[k].k] == 0) {
+						not_eligible_hub[i][z_closed[k].k] = 1;
+						eli_per_com[i]--;
+					}
+				}
 				count_fixed++;
 				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 			}
