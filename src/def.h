@@ -250,3 +250,13 @@ void Benders_BC(void);
  int  glob_numcols;
  int* best_sol_facilities;
  int* best_sol_assignments;
+
+ int** not_eligible_hub; //Matrix that keeps track which of the hubs is a feasible assignment or not.
+ int* nom_com_assign; //NUmber of commodities assigned per hub
+ int* nom_com_assign_few; //NUmber of commodities assigned per hub which there are few candidates.
+ int* eli_per_com; //Number of eligible per com
+
+ //For the reduced size of the subproblem
+ int Breakpoint_O_D;
+ int* index_hub_oi;
+ int* index_hub_dj;

@@ -268,6 +268,13 @@ void initialize_memory(void) {
   prevsols=(Solpool *) calloc(NN, sizeof(Solpool));
   prevsols[countsols].indhub=create_int_vector(NN);
   FlagHubLPsupport = create_int_vector(NN);
+  not_eligible_hub = create_int_matrix(NN, NN);
+  index_hub_oi = create_int_vector(NN);
+  index_hub_dj = create_int_vector(NN);
+  eli_per_com = create_int_vector(NN);
+  for (i = 0; i < NN; i++) {
+	  eli_per_com[i] = NN;
+  }
   /*********************************************************/
   
   best_sol_facilities = create_int_vector(NN);
@@ -320,8 +327,10 @@ void initialize_memory(void) {
 void free_memory(void)
 {
   int i,j;
-
+  free(index_hub_oi);
+  free(index_hub_dj);
   free(FlagHubLPsupport);
+  free(eli_per_com);
   for (i = 0; i < NN; i++){
 	  free(f[i]);
 	  free(b[i]);
@@ -338,8 +347,10 @@ void free_memory(void)
 	  }
 	  free(alpha[i]);
 	  free(beta[i]);
+	  free(not_eligible_hub[i]);
   }
 
+  free(not_eligible_hub);
   free(W);
   free(pts);
   free(c);

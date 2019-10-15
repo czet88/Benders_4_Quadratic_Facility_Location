@@ -879,103 +879,127 @@ int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
 
    net = CPXNETcreateprob (env, &status, "netex1");
 
-   if ( net == NULL ) {
-      fprintf (stderr, "Failed to create network object.\n");
-      goto TERMINATE;
-   }
+if (net == NULL) {
+	fprintf(stderr, "Failed to create network object.\n");
+	goto TERMINATE;
+}
 
-   //system("pause");
-   status = buildNetwork (env, net, sol_z, Origin_Node, Destin_Node);
-   //system("pause");
-   if ( status ) {
-      fprintf (stderr, "Failed to build network problem.\n");
-      goto TERMINATE;
-   }
+//system("pause");
+status = buildNetwork(env, net, sol_z, Origin_Node, Destin_Node);
+//system("pause");
+if (status) {
+	fprintf(stderr, "Failed to build network problem.\n");
+	goto TERMINATE;
+}
 
 
-   /* Optimize the problem and obtain solution. */
-   CPXsetdblparam(env,CPX_PARAM_TILIM,100);
-   //CPXsetintparam(env, CPX_PARAM_NETPPRIIND, 2);
-   status = CPXNETprimopt (env, net);
-   if ( status ) {
-      fprintf (stderr, "Failed to optimize network.\n");
-      goto TERMINATE;
-   }
+/* Optimize the problem and obtain solution. */
+CPXsetdblparam(env, CPX_PARAM_TILIM, 100);
+//CPXsetintparam(env, CPX_PARAM_NETPPRIIND, 2);
+status = CPXNETprimopt(env, net);
+if (status) {
+	fprintf(stderr, "Failed to optimize network.\n");
+	goto TERMINATE;
+}
 
-   /* get network dimensions */
+/* get network dimensions */
 
-   narcs  = CPXNETgetnumarcs  (env, net);
-   nnodes = CPXNETgetnumnodes (env, net);
+narcs = CPXNETgetnumarcs(env, net);
+nnodes = CPXNETgetnumnodes(env, net);
 
-   /* allocate memory for solution data */
-   pi    = (double *) malloc (nnodes * sizeof (double));
+/* allocate memory for solution data */
+pi = (double*)malloc(nnodes * sizeof(double));
 
-   status = CPXNETsolution (env, net, &solstat, &objval, NULL, pi, NULL, NULL);
-   if(solstat!=CPX_STAT_OPTIMAL){
-	   missed++;
-	   printf("solstat: %d \n", solstat);
-	   printf("Warning: sum_supply: %.4f sum_demand: %.4f \n", sum_supply_j, sum_supply_i);
-	  // printf("Warning did not solve status=%d for %d and %d\n", solstat, Origin_Node, Destin_Node); 
-	   //buildRealNetwork(env, net, sol_z, Origin_Node, Destin_Node);
-	  // status = CPXNETprimopt (env, net);
-	   //status = CPXNETsolution (env, net, &solstat, &objval, NULL, pi, NULL, NULL);
-	   //printf("After second try, solution status is %d\n", solstat);
-	   //getchar();
-	   
-   }
-   if ( status ) {
-      fprintf (stderr, "Failed to obtain solution.\n");
-      goto TERMINATE;
-   }
+status = CPXNETsolution(env, net, &solstat, &objval, NULL, pi, NULL, NULL);
+if (solstat != CPX_STAT_OPTIMAL) {
+	missed++;
+	printf("solstat: %d \n", solstat);
+	printf("Warning: sum_supply: %.4f sum_demand: %.4f \n", sum_supply_j, sum_supply_i);
+	getchar();
+	// printf("Warning did not solve status=%d for %d and %d\n", solstat, Origin_Node, Destin_Node); 
+	 //buildRealNetwork(env, net, sol_z, Origin_Node, Destin_Node);
+	// status = CPXNETprimopt (env, net);
+	 //status = CPXNETsolution (env, net, &solstat, &objval, NULL, pi, NULL, NULL);
+	 //printf("After second try, solution status is %d\n", solstat);
+	 //getchar();
 
-   for (k = 0; k<count_cand_hubs; k++){
-	   alpha[Origin_Node][Destin_Node][cand_hubs[k]] = pi[k];					//giving
-	}
-   for (m = 0; m<count_cand_hubs; m++){
-	   beta[Origin_Node][Destin_Node][cand_hubs[m]] = (-pi[count_cand_hubs + m]); //receiving
-	}
+}
+if (status) {
+	fprintf(stderr, "Failed to obtain solution.\n");
+	goto TERMINATE;
+}
 
-   
+for (k = 0; k < Breakpoint_O_D; k++) {
+	alpha[Origin_Node][Destin_Node][index_hub_oi[k]] = pi[k];					//giving
+}
+for (m = Breakpoint_O_D; m < nnodes; m++) {
+	beta[Origin_Node][Destin_Node][index_hub_dj[m-Breakpoint_O_D]] = (-pi[m]); //receiving
+}
+
+
 TERMINATE:
 
-   /* Free memory for solution data */
-   free_and_null ((char **) &pi);
+/* Free memory for solution data */
+free_and_null((char**)& pi);
 
-   /* Free up the problem as allocated by CPXNETcreateprob, if necessary */
+/* Free up the problem as allocated by CPXNETcreateprob, if necessary */
 
-   if ( net != NULL ) {
-      status = CPXNETfreeprob (env, &net);
-      if ( status ) {
-         fprintf (stderr, "CPXNETfreeprob failed, error code %d.\n", status);
-      }
-   }
+if (net != NULL) {
+	status = CPXNETfreeprob(env, &net);
+	if (status) {
+		fprintf(stderr, "CPXNETfreeprob failed, error code %d.\n", status);
+	}
+}
 
-   /* Free up the CPLEX environment, if necessary */
+/* Free up the CPLEX environment, if necessary */
 
-   if ( env != NULL ) {
-      status = CPXcloseCPLEX (&env);
-      if ( status ) {
-      char  errmsg[CPXMESSAGEBUFSIZE];
-         fprintf (stderr, "Could not close CPLEX environment.\n");
-         CPXgeterrorstring (env, status, errmsg);
-         fprintf (stderr, "%s", errmsg);
-      }
-   }
-     
-   return (status);
+if (env != NULL) {
+	status = CPXcloseCPLEX(&env);
+	if (status) {
+		char  errmsg[CPXMESSAGEBUFSIZE];
+		fprintf(stderr, "Could not close CPLEX environment.\n");
+		CPXgeterrorstring(env, status, errmsg);
+		fprintf(stderr, "%s", errmsg);
+	}
+}
+
+return (status);
 
 }  /* END main */
 
 
-int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
+int buildNetwork(CPXENVptr env, CPXNETptr net, double* z_sol, int Origin_Node, int Destin_Node)
 {
-   int status = 0;
-   int k,m;
-   int NNODES_i = count_cand_hubs;//No. of potential 1st hub (k)
-   int NNODES_j = count_cand_hubs;//No. of potential 2nd hub (m)
-   int NNODES = NNODES_i + NNODES_j;//NNODES_i hubs k and NNODES_j hubs m
-   int NARCS = NNODES_i*NNODES_j;
-   int count=0;
+	int status = 0;
+	int k, m;
+	int NNODES_i = 0; //No. of potential 1st hub (k)
+	int NNODES_j = 0; //No. of potential 2nd hub (m)
+	int NNODES = 0;//NNODES_i hubs k and NNODES_j hubs m
+	int NARCS;
+	int count = 0;
+
+	
+	for (k = 0; k < NN; k++) {
+		if (not_eligible_hub[Origin_Node][cand_hubs[k]] == 0) {						
+			index_hub_oi[NNODES_i] = cand_hubs[k];
+			NNODES_i++;
+			NNODES++;
+		}
+		else {
+			if (z_sol[pos_z[Origin_Node][cand_hubs[k]]] > 0.001) {
+				printf("There was %lf here\n", z_sol[pos_z[Origin_Node][cand_hubs[k]]]);
+				getchar();
+			}
+		}
+		if (not_eligible_hub[Destin_Node][cand_hubs[k]] == 0) {
+			index_hub_dj[NNODES_j] = cand_hubs[k]; 
+			NNODES_j++;
+			NNODES++;
+		}
+	}
+
+	Breakpoint_O_D = NNODES_i;
+	NARCS = NNODES_i * NNODES_j;
    
    //int *tail = new int[NARCS], *head = new int[NARCS];
    //double *obj = new double[NARCS],*ub = new double[NARCS],*lb = new double[NARCS];
@@ -999,12 +1023,12 @@ int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, 
    if (MG == 1){
 	   sum_supply_i = 0;
 	   for (k = 0; k < NNODES_i; k++){
-		   supply[k] = core[Origin_Node][cand_hubs[k]] + sum_core*z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
+		   supply[k] = core[Origin_Node][index_hub_oi[k]] + sum_core*z_sol[pos_z[Origin_Node][index_hub_oi[k]]];//Supply at hub k = Zik
 		   sum_supply_i += supply[k];
 	   }
 	   sum_supply_j = 0;
 	   for (m = 0; m < NNODES_j; m++){
-		   supply[NNODES_i + m] = -(core[Destin_Node][cand_hubs[m]] + sum_core*z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
+		   supply[NNODES_i + m] = -(core[Destin_Node][index_hub_dj[m]] + sum_core*z_sol[pos_z[Destin_Node][index_hub_dj[m]]]);//Supply at hub m = -Zjm
 		   sum_supply_j += supply[NNODES_i + m];
 	   }
    }
@@ -1012,12 +1036,12 @@ int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, 
 	   ////Using Papadakos Appproach to obtain Pareto-Optimal cuts
 	   //sum_supply_i = 0;
 	   for (k = 0; k < NNODES_i; k++){
-		   supply[k] = core[Origin_Node][cand_hubs[k]];//Supply at hub k = Zik
+		   supply[k] = z_sol[pos_z[Origin_Node][index_hub_oi[k]]];//Supply at hub k = Zik
 		   //sum_supply_i += supply[k];
 	   }
 	   //sum_supply_j = 0;
 	   for (m = 0; m < NNODES_j; m++){
-		   supply[NNODES_i + m] = -core[Destin_Node][cand_hubs[m]];//Supply at hub m = -Zjm
+		   supply[NNODES_i + m] = -z_sol[pos_z[Destin_Node][index_hub_dj[m]]];//Supply at hub m = -Zjm
 		  //sum_supply_j += supply[NNODES_i + m];
 	   }
    }
@@ -1036,7 +1060,7 @@ int buildNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, 
 	   {
 		   tail[count]= k;//Hub k node number starts from 0
 		   head[count]= NNODES_i+m;//
-		   obj[count]=(W[Origin_Node][Destin_Node]*c_t[cand_hubs[k]][cand_hubs[m]] + W[Destin_Node][Origin_Node]*c_t[cand_hubs[m]][cand_hubs[k]]);
+		   obj[count]=(W[Origin_Node][Destin_Node]*c_t[index_hub_oi[k]][index_hub_dj[m]] + W[Destin_Node][Origin_Node]*c_t[index_hub_dj[m]][index_hub_oi[k]]);
 		   //obj[count]=(W[Origin_Node][Destin_Node])*(c_c[Origin_Node][k] + c_t[k][m] + c_d[m][Destin_Node]);
 		   //obj[count] = (W[Origin_Node][Destin_Node])*(c_t[cand_hubs[k]][cand_hubs[m]]);
 		   ub[count]=CPX_INFBOUND;
@@ -1132,36 +1156,115 @@ TERMINATE:
 }  /* END buildnetwork */
 
 
+//void Define_Core_Point(void)
+//{
+//	int i, k;
+//	double precount, epsilon;
+//	
+//	if(hybrid==0 || hybrid==3){
+//		precount=(double) (p_hubs*1.0/(count_cand_hubs));
+//		epsilon = (double)(1 / (2 * count_cand_hubs));
+//		//printf("Precount=%lf\n",precount);
+//		for (i = 0; i < NN; i++){
+//			if (fixed_zero[i] == 0){
+//				for (k = 0; k < NN; k++){
+//					if (i == k){
+//						core[i][k] = (double)(precount - epsilon);
+//						//printf("corepoint=%lf\n",core[i][k]);
+//						sum_core += core[i][k];
+//					}
+//					else{
+//						if (fixed_zero[k] == 0){
+//							core[i][k] = (double) ((1 - (precount-epsilon)) / (count_cand_hubs - 1));
+//							//("corepoint=%lf\n",core[i][k]);
+//							sum_core += core[i][k];
+//						}
+//					}
+//				}
+//			}
+//			else{
+//				for (k = 0; k < NN; k++){
+//					if (i != k && fixed_zero[k] == 0){
+//						core[i][k] = (double) (1.0 / (count_cand_hubs));
+//						//printf("corepoint=%lf\n",core[i][k]);
+//						sum_core += core[i][k];
+//					}
+//				}
+//			}
+//		}
+//	}
+//	else{
+//		sum_core = 0;
+//		if(count_cand_hubs>1){
+//			for (i = 0; i < NN; i++){
+//				if (fixed_zero[i] == 0){
+//					for (k = 0; k < NN; k++){
+//						if (i == k){
+//							core[i][k] = 0.5;
+//							sum_core += core[i][k];
+//						}
+//						else{
+//							if (fixed_zero[k] == 0){
+//								core[i][k] = 0.5 / (count_cand_hubs - 1);
+//								sum_core += core[i][k];
+//							}
+//						}
+//					}
+//				}
+//				else{
+//					for (k = 0; k < NN; k++){
+//						if (i != k && fixed_zero[k] == 0){
+//							core[i][k] = (double) (1.0 / (count_cand_hubs));
+//							sum_core += core[i][k];
+//						}
+//					}
+//				}
+//			}
+//		}
+//		else{ //This is when there is only one candidate hub
+//			for(i=0;i<NN;i++){
+//				core[i][cand_hubs[0]]=1.0;
+//			}
+//		}
+//	}
+//}
+
 void Define_Core_Point(void)
 {
 	int i, k;
 	double precount, epsilon;
-	
-	if(hybrid==0 || hybrid==3){
-		precount=(double) (p_hubs*1.0/(count_cand_hubs));
+	//Initialize
+	for (i = 0; i < NN; i++) {
+		for (k = 0; k < NN; k++) {
+			core[i][k] = 0;
+		}
+	}
+
+	if (hybrid == 0 || hybrid == 3) {
+		precount = (double)(p_hubs * 1.0 / (count_cand_hubs));
 		epsilon = (double)(1 / (2 * count_cand_hubs));
 		//printf("Precount=%lf\n",precount);
-		for (i = 0; i < NN; i++){
-			if (fixed_zero[i] == 0){
-				for (k = 0; k < NN; k++){
-					if (i == k){
+		for (i = 0; i < NN; i++) {
+			if (fixed_zero[i] == 0) {
+				for (k = 0; k < NN; k++) {
+					if (i == k) {
 						core[i][k] = (double)(precount - epsilon);
 						//printf("corepoint=%lf\n",core[i][k]);
 						sum_core += core[i][k];
 					}
-					else{
-						if (fixed_zero[k] == 0){
-							core[i][k] = (double) ((1 - (precount-epsilon)) / (count_cand_hubs - 1));
+					else {
+						if (fixed_zero[k] == 0 && not_eligible_hub[i][k]==0) {
+							core[i][k] = (double)((1 - (precount - epsilon)) / (eli_per_com[i] - 1));
 							//("corepoint=%lf\n",core[i][k]);
 							sum_core += core[i][k];
 						}
 					}
 				}
 			}
-			else{
-				for (k = 0; k < NN; k++){
-					if (i != k && fixed_zero[k] == 0){
-						core[i][k] = (double) (1.0 / (count_cand_hubs));
+			else {
+				for (k = 0; k < NN; k++) {
+					if (i != k && fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
+						core[i][k] = (double)(1.0 / (eli_per_com[i]));
 						//printf("corepoint=%lf\n",core[i][k]);
 						sum_core += core[i][k];
 					}
@@ -1169,37 +1272,37 @@ void Define_Core_Point(void)
 			}
 		}
 	}
-	else{
+	else {
 		sum_core = 0;
-		if(count_cand_hubs>1){
-			for (i = 0; i < NN; i++){
-				if (fixed_zero[i] == 0){
-					for (k = 0; k < NN; k++){
-						if (i == k){
+		if (count_cand_hubs > 1) {
+			for (i = 0; i < NN; i++) {
+				if (fixed_zero[i] == 0) {
+					for (k = 0; k < NN; k++) {
+						if (i == k) {
 							core[i][k] = 0.5;
 							sum_core += core[i][k];
 						}
-						else{
-							if (fixed_zero[k] == 0){
-								core[i][k] = 0.5 / (count_cand_hubs - 1);
+						else {
+							if (fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
+								core[i][k] = 0.5 / (eli_per_com[i] - 1);
 								sum_core += core[i][k];
 							}
 						}
 					}
 				}
-				else{
-					for (k = 0; k < NN; k++){
-						if (i != k && fixed_zero[k] == 0){
-							core[i][k] = (double) (1.0 / (count_cand_hubs));
+				else {
+					for (k = 0; k < NN; k++) {
+						if (i != k && fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
+							core[i][k] = (double)(1.0 / (eli_per_com[i]));
 							sum_core += core[i][k];
 						}
 					}
 				}
 			}
 		}
-		else{ //This is when there is only one candidate hub
-			for(i=0;i<NN;i++){
-				core[i][cand_hubs[0]]=1.0;
+		else { //This is when there is only one candidate hub
+			for (i = 0; i < NN; i++) {
+				core[i][cand_hubs[0]] = 1.0;
 			}
 		}
 	}
@@ -1217,11 +1320,11 @@ void Update_Core_Point(double *z_sol){
 		  sum_i = 0;
 		  sum_j = 0;
 		  for (k = 0; k < count_cand_hubs; k++)
-			  sum_i += core[i][cand_hubs[k]];
+			  sum_i += /*z_sol[pos_z[i][cand_hubs[k]]]*/core[i][cand_hubs[k]]*(1-not_eligible_hub[i][cand_hubs[k]]);
 		  for (m = 0; m < count_cand_hubs; m++)
-			  sum_j += core[j][cand_hubs[m]];
+			  sum_j += /*z_sol[pos_z[j][cand_hubs[m]]]*/ core[j][cand_hubs[m]]* (1 - not_eligible_hub[j][cand_hubs[m]]);
 		  if (ABS(sum_i - sum_j) > 0.0001)
-			  printf("something wrong with core point: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
+			  printf("something wrong with x value: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
 	  }
   }
 
@@ -1232,6 +1335,7 @@ void Update_Core_Point(double *z_sol){
 		  core[i][cand_hubs[k]] = fact*core[i][cand_hubs[k]] + (1-fact)*z_sol[pos_z[i][cand_hubs[k]]];
 	  }
   }
+
   for (i = 0; i < NN; i++) {
 	  for (j = i; j < NN; j++) {
 		  sum_i = 0;
@@ -1240,8 +1344,8 @@ void Update_Core_Point(double *z_sol){
 			  sum_i += core[i][cand_hubs[k]];
 		  for (m = 0; m < count_cand_hubs; m++)
 			  sum_j += core[j][cand_hubs[m]];
-		  if (ABS(sum_i - sum_j) > 0.0001)
-			  printf("something wrong with core point: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
+		  /*if (ABS(sum_i - sum_j) > 0.0001)
+			  printf("something wrong with core point: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);*/
 	  }
   }
 

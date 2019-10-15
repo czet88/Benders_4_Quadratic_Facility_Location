@@ -92,20 +92,20 @@ void Benders_root_node_heur(void)
 	char* btype;
 	int* bind;
 	double* realub;
-	i_vector(&bind,1, "open_cplex:4");
+	i_vector(&bind, 1, "open_cplex:4");
 	c_vector(&btype, 1, "open_cplex:3");
 	d_vector(&realub, 1, "open_cplex:3");
 	realub[0] = 0;
 	btype[0] = 'U';
-	
-			
+
+
 
 	priority = create_int_vector(NN * NN);
 	indices = create_int_vector(NN * NN);
 
 	//Declaring the global types
 	glob_numcols = NN * NN + 1;
-	globvarind=create_int_vector(glob_numcols);  //Array containing all the Types for the complete model
+	globvarind = create_int_vector(glob_numcols);  //Array containing all the Types for the complete model
 	c_vector(&globvarctype, glob_numcols, "open_cplex:01");
 
 	/*******************************/
@@ -183,7 +183,7 @@ void Benders_root_node_heur(void)
 			lb[index1] = 0;
 			ub[index1] = 1;
 			indices[index1] = index1;
-			globvarind[index1] =  index1;
+			globvarind[index1] = index1;
 			globvarctype[index1] = 'B';
 			index1++;
 		}
@@ -392,31 +392,49 @@ void Benders_root_node_heur(void)
 			}
 		}*/
 		//Simple variable fixing test with reduced cost coefficients
+		
 		printf("Starting elimination test\n");
 		flag_fixed = 0;
-		if (vers != 5) {
-			assign_fixed = 0;
+		assign_fixed = 0;
+		if (vers != 5) {			
 			for (i = 0; i < count_cand_hubs; i++) {
 				if (value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]] > UpperBound + 0.01) {
 					//printf("Fix z[%d] = 0  obj+redcost:%.5f  UB:%.5f \n", cand_hubs[i] + 1, value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]], UpperBound);
 					fixed_zero[cand_hubs[i]] = 1;
 					bind[0] = pos_z[cand_hubs[i]][cand_hubs[i]];
-					status=CPXchgbds(env, lp, 1, bind, btype, realub);
+					status = CPXchgbds(env, lp, 1, bind, btype, realub);
 					if (status) fprintf(stderr, "CPXchange bounds failed.\n");
 					count_fixed++;
 					flag_fixed = 1;
+					not_eligible_hub[cand_hubs[i]][cand_hubs[i]] = 1;
+					eli_per_com[cand_hubs[i]]--;
+					for (k = 0; k < NN; k++) {
+						if (not_eligible_hub[k][cand_hubs[i]] == 0) {
+							bind[0] = pos_z[k][cand_hubs[i]];
+							status = CPXchgbds(env, lp, 1, bind, btype, realub);
+							not_eligible_hub[k][cand_hubs[i]] = 1;
+							eli_per_com[k]--;
+							assign_fixed++;
+						}
+					}
 				}
 				else {
-					for (k = 0; k < NN; k++) {						
-						if (value + dj[pos_z[k][cand_hubs[i]]] > UpperBound + 0.01) {
+					for (k = 0; k < NN; k++) {
+						if (not_eligible_hub[k][cand_hubs[i]] == 0 && value + dj[pos_z[k][cand_hubs[i]]] > UpperBound + 0.01) {
 							assign_fixed++;
 							bind[0] = pos_z[k][cand_hubs[i]];
 							CPXchgbds(env, lp, 1, bind, btype, realub);
+							not_eligible_hub[k][cand_hubs[i]] = 1;
+							eli_per_com[k]--;
 						}
 					}
 				}
 			}
-			if (assign_fixed > 0) printf("Fixed %d assignment variables in this iteration\n", assign_fixed);
+			
+
+			if (assign_fixed > 0) {
+				printf("Fixed %d assignment variables in this iteration\n", assign_fixed);
+			}
 
 			if (flag_fixed == 1) { //If I fixed to 0 some hubs
 				count_cand_hubs = 0;
@@ -425,15 +443,14 @@ void Benders_root_node_heur(void)
 						cand_hubs[count_cand_hubs++] = k;
 				}
 				printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
-				Define_Core_Point();
 			}
 		}
 		printf("Finished elimination test.\n");
 
-		
+
 		//Partial Enumeration phase: solve LPs to try to remove potential locations
 
-		if (((UpperBound - value) / UpperBound * 100< 2.0 && flag_fixed==1) ){
+		if (((UpperBound - value) / UpperBound * 100 < 1.0 && flag_fixed == 1)) {
 			count_c = 0;
 			for (k = 0; k < count_cand_hubs; k++) {
 				if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
@@ -478,6 +495,12 @@ void Benders_root_node_heur(void)
 					CPXchgbds(env, lp, 1, bind, btype, realub);
 					count_fixed++;
 					flag_fixed = 1;
+					for (i = 0; i < NN; i++) {
+						if (not_eligible_hub[i][z_closed[k].k] == 0) {
+							not_eligible_hub[i][z_closed[k].k] = 1;
+							eli_per_com[i]--;
+						}
+					}
 					//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 				}
 				else {
@@ -492,11 +515,14 @@ void Benders_root_node_heur(void)
 						cand_hubs[count_cand_hubs++] = k;
 				}
 				printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
-				Define_Core_Point();
+				//Define_Core_Point();
 				//goto EVALUATE;
 			}
 		}
-		if (flag_fixed == 1) {
+
+
+		if (flag_fixed == 1 || assign_fixed > 0) {
+			Define_Core_Point();
 			status = CPXlpopt(env, lp);
 			if (status) fprintf(stderr, "Failed to optimize LP.\n");
 			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
@@ -510,11 +536,13 @@ void Benders_root_node_heur(void)
 		index1 = 0;
 
 		printf("Starting to separate Benders cuts\n");
-		if (vers != 3)
-			Update_Core_Point(x);
+		if (vers != 3) {
+			Define_Core_Point();
+			//Update_Core_Point(x);
+		}
 		for (i = 0; i < NN-1; i++) {
 			for (j = i+1; j < NN; j++) {
-				Check_CP_MW(x, i, j);
+				//Check_CP_MW(x, i, j);				
 				status = NetFlow_TP(x, i, j);
 			}
 		}
@@ -567,6 +595,7 @@ void Benders_root_node_heur(void)
 		end_SP = clock();
 		cputime_SP += (double)(end_SP - start_SP) / CLOCKS_PER_SEC;
 		end = clock();
+		
 		//printf("Finished separating more optimality cuts took %lf secs\n",(double)(end_SP - start_SP) / CLOCKS_PER_SEC);
 		cputime = (double)(end - start) / CLOCKS_PER_SEC;
 		printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
@@ -591,6 +620,7 @@ void Benders_root_node_heur(void)
 
 		//Solve again and if there is a different support, then find another feasible solution.
 	//EVALUATE:
+		Define_Core_Point();
 		status = CPXlpopt(env, lp);
 		if (status) fprintf(stderr, "Failed to optimize LP.\n");
 		CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
