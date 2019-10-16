@@ -622,7 +622,7 @@ void Benders_root_node_heur(void)
 
 		//Solve again and if there is a different support, then find another feasible solution.
 	//EVALUATE:
-		Define_Core_Point();
+		//Define_Core_Point();
 		status = CPXlpopt(env, lp);
 		if (status) fprintf(stderr, "Failed to optimize LP.\n");
 		CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
@@ -649,9 +649,10 @@ void Benders_root_node_heur(void)
 	cputime = (double)(end - start) / CLOCKS_PER_SEC;
 	printf("Root node LP bound: %.2f \n Root node Time: %.2f \n Num Benders cuts: %d \n  Num cover cuts: %d Num Fenchel cuts: %d \n", value, cputime, count_added, count_cover_cuts, count_Fenchel_cuts);
 
+	flag_fixed = 0;
 	count_o = 0;
 	for (k = 0; k < NN; k++) {
-		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.2) {
+		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.8) {
 			z_open[count_o].k = k;
 			z_open[count_o++].value = x[pos_z[k][k]];
 		}
@@ -706,6 +707,7 @@ void Benders_root_node_heur(void)
 		printf("Ended phase fix 0\n Started phase fix 1\n");
 		
 		//Partial Enumeration phase part II: Try to permanently close a set of hubs
+		//printf("we will look at %d hubs\n", count_c); getchar();
 		for (k = 0; k < count_c; k++){  						// Temporarily fix z_kk = 1 to try to permantely open it (i.e. z_k = 0 from now on)
 			index = 0;
 			index1 = 0;
@@ -733,25 +735,37 @@ void Benders_root_node_heur(void)
 				btype[0] = 'U';
 				realub[0] = 0;
 				CPXchgbds(env, lp, 1, bind, btype, realub);
-				count_fixed++;
 				flag_fixed = 1;
+				count_fixed++;
 				for (i = 0; i < NN; i++) {
 					if (not_eligible_hub[i][z_closed[k].k] == 0) {
 						not_eligible_hub[i][z_closed[k].k] = 1;
+						//if(i==74)printf("Remove %d for hub %d from PE test\n", i, z_closed[k].k + 1);
 						eli_per_com[i]--;
 					}
-				}
-				count_fixed++;
+					else {
+						//if(i==74)printf("assigned %d for hub %d is already not eligible with value %d\n", i, z_closed[k].k+1, not_eligible_hub[i][z_closed[k].k]);
+					}
+				}				
 				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 			}
 		}
 		printf("Ended phase fix 1\n");
+		//printf("Node 74 has %d eligible hubs\n", eli_per_com[74]);
+		/*for (i = 0; i < NN; i++) {
+			if (not_eligible_hub[74][i] == 0) {
+				printf("Hub %d is the only eligible hub\n", i);
+			}
+		}*/
 		
-		count_cand_hubs = 0;
-		for (k = 0; k < NN; k++){
-			if (fixed_zero[k] == 0)
-				cand_hubs[count_cand_hubs++] = k;
+		if (flag_fixed == 1) {
+			count_cand_hubs = 0;
+			for (k = 0; k < NN; k++) {
+				if (fixed_zero[k] == 0)
+					cand_hubs[count_cand_hubs++] = k;
+			}
 		}
+		Define_Core_Point();
 		printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
 	}
 	status = CPXlpopt(env, lp);
@@ -774,7 +788,6 @@ void Benders_root_node_heur(void)
 
 	//Now solving the Integer Program
 	 /******************************************************************************************/
-	Define_Core_Point();
 	SetBranchandCutParam(env, lp);
 	if (vers != 2) CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
 	status = CPXcopyorder(env, lp, NN*NN, indices, priority, NULL);

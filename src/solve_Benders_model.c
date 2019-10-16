@@ -748,8 +748,9 @@ mycutcallback (CPXCENVptr env,
      }
 
 	 if (vers != 3 && Flag_Integer == 1) { //modifiedy by ivan 5172019
-		 //Define_Core_Point();
-		 Update_Core_Point(x); //modifiedy by ivan 5172019		 
+		 Define_Core_Point();
+		 Update_Core_Point(x); //modifiedy by ivan 5172019
+		 //printf("would have updated\n");
 	 }
 	 
 	//printf("Started separating\n");
@@ -916,9 +917,9 @@ pi = (double*)malloc(nnodes * sizeof(double));
 status = CPXNETsolution(env, net, &solstat, &objval, NULL, pi, NULL, NULL);
 if (solstat != CPX_STAT_OPTIMAL) {
 	missed++;
-	printf("solstat: %d \n", solstat);
+	/*printf("solstat: %d \n", solstat);
 	printf("Warning: sum_supply: %.4f sum_demand: %.4f \n", sum_supply_j, sum_supply_i);
-	getchar();
+	getchar();*/
 	// printf("Warning did not solve status=%d for %d and %d\n", solstat, Origin_Node, Destin_Node); 
 	 //buildRealNetwork(env, net, sol_z, Origin_Node, Destin_Node);
 	// status = CPXNETprimopt (env, net);
@@ -1242,28 +1243,37 @@ void Define_Core_Point(void)
 		epsilon = (double)(1 / (2 * count_cand_hubs));
 		//printf("Precount=%lf\n",precount);
 		for (i = 0; i < NN; i++) {
-			if (fixed_zero[i] == 0) {
-				for (k = 0; k < NN; k++) {
-					if (i == k) {
-						core[i][k] = (double)(precount - epsilon);
-						//printf("corepoint=%lf\n",core[i][k]);
-						sum_core += core[i][k];
+			if (eli_per_com[i] > 1) { //If there is more than one candidate then you can do this
+				if (fixed_zero[i] == 0) {
+					for (k = 0; k < NN; k++) {
+						if (i == k) {
+							core[i][k] = (double)(precount - epsilon);
+							//printf("corepoint=%lf\n",core[i][k]);
+							sum_core += core[i][k];
+						}
+						else {
+							if (/*fixed_zero[k] == 0 && */not_eligible_hub[i][k] == 0) {
+								core[i][k] = (double)((1 - (precount - epsilon)) / (eli_per_com[i] - 1));
+								//("corepoint=%lf\n",core[i][k]);
+								sum_core += core[i][k];
+							}
+						}
 					}
-					else {
-						if (fixed_zero[k] == 0 && not_eligible_hub[i][k]==0) {
-							core[i][k] = (double)((1 - (precount - epsilon)) / (eli_per_com[i] - 1));
-							//("corepoint=%lf\n",core[i][k]);
+				}
+				else {
+					for (k = 0; k < NN; k++) {
+						if (i != k && /*fixed_zero[k] == 0 && */not_eligible_hub[i][k] == 0) {
+							core[i][k] = (double)(1.0 / (eli_per_com[i]));
+							//printf("corepoint=%lf\n",core[i][k]);
 							sum_core += core[i][k];
 						}
 					}
 				}
 			}
-			else {
+			else {  //What to do in the event that there is only one potential assignment.
 				for (k = 0; k < NN; k++) {
-					if (i != k && fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
-						core[i][k] = (double)(1.0 / (eli_per_com[i]));
-						//printf("corepoint=%lf\n",core[i][k]);
-						sum_core += core[i][k];
+					if (not_eligible_hub[i][k] == 0) {
+						core[i][k] = 1.0;
 					}
 				}
 			}
@@ -1273,25 +1283,34 @@ void Define_Core_Point(void)
 		sum_core = 0;
 		if (count_cand_hubs > 1) {
 			for (i = 0; i < NN; i++) {
-				if (fixed_zero[i] == 0) {
-					for (k = 0; k < NN; k++) {
-						if (i == k) {
-							core[i][k] = 0.5;
-							sum_core += core[i][k];
+				if (eli_per_com[i] > 1) { //If there is more than one candidate then you can do this
+					if (fixed_zero[i] == 0) {
+						for (k = 0; k < NN; k++) {
+							if (i == k) {
+								core[i][k] = 0.5;
+								sum_core += core[i][k];
+							}
+							else {
+								if (/*fixed_zero[k] == 0 && */not_eligible_hub[i][k] == 0) {
+									core[i][k] = 0.5 / (eli_per_com[i] - 1);
+									sum_core += core[i][k];
+								}
+							}
 						}
-						else {
-							if (fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
-								core[i][k] = 0.5 / (eli_per_com[i] - 1);
+					}
+					else {
+						for (k = 0; k < NN; k++) {
+							if (i != k && /*fixed_zero[k] == 0 &&*/ not_eligible_hub[i][k] == 0) {
+								core[i][k] = (double)(1.0 / (eli_per_com[i]));
 								sum_core += core[i][k];
 							}
 						}
 					}
 				}
-				else {
+				else {  //What to do in the event that there is only one potential assignment.
 					for (k = 0; k < NN; k++) {
-						if (i != k && fixed_zero[k] == 0 && not_eligible_hub[i][k] == 0) {
-							core[i][k] = (double)(1.0 / (eli_per_com[i]));
-							sum_core += core[i][k];
+						if (not_eligible_hub[i][k] == 0) {
+							core[i][k] = 1.0;
 						}
 					}
 				}
@@ -1317,11 +1336,11 @@ void Update_Core_Point(double *z_sol){
 		  sum_i = 0;
 		  sum_j = 0;
 		  for (k = 0; k < count_cand_hubs; k++)
-			  sum_i += /*z_sol[pos_z[i][cand_hubs[k]]]*/core[i][cand_hubs[k]]*(1-not_eligible_hub[i][cand_hubs[k]]);
+			  sum_i += /*z_sol[pos_z[i][cand_hubs[k]]]*/core[i][cand_hubs[k]]/**(1-not_eligible_hub[i][cand_hubs[k]])*/;
 		  for (m = 0; m < count_cand_hubs; m++)
-			  sum_j += /*z_sol[pos_z[j][cand_hubs[m]]]*/ core[j][cand_hubs[m]]* (1 - not_eligible_hub[j][cand_hubs[m]]);
-		  if (ABS(sum_i - sum_j) > 0.0001)
-			  printf("something wrong with x value: sum_i:%.2f sum_j:%.2f \n", sum_i, sum_j);
+			  sum_j += /*z_sol[pos_z[j][cand_hubs[m]]]*/ core[j][cand_hubs[m]]/** (1 - not_eligible_hub[j][cand_hubs[m]])*/;
+		 /* if (ABS(sum_i - sum_j) > 0.0001)
+			  printf("something wrong with core value for %d and %d: sum_i:%.2f sum_j:%.2f \n", i,j, sum_i, sum_j);*/
 	  }
   }
 
