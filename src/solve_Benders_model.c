@@ -40,14 +40,23 @@ int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp) {	//Here we will set the br
 	CPXchgobjsen(env, lp, CPX_MIN);
 	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
 	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 3); //different levels of output display
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	//CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	//CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.0000001); // e-optimal solution (%gap)
+	CPXsetintparam(env,CPX_PARAM_REDUCE, 0);  // only needed when adding lazy constraints
+	CPXsetintparam(env, CPX_PARAM_PREIND, 0);
+	CPXsetdblparam(env, CPX_PARAM_CUTUP, UpperBound + 0.001); // provide an initial upper bound
+	CPXsetintparam(env, CPX_PARAM_MIPEMPHASIS, CPX_MIPEMPHASIS_OPTIMALITY);  // MIP emphasis: optimality, feasibility, moving best bound
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 3600); // time limit
+	CPXsetdblparam(env, CPX_PARAM_TRELIM, 14000); // B&B memory limit
 	CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.0000001); // e-optimal solution (%gap)
-	//CPXsetdblparam(env, CPX_PARAM_CUTSFACTOR, 1.0); // add cuts or not
+											  //CPXsetdblparam(env, CPX_PARAM_CUTSFACTOR, 1.0); // add cuts or not
 	//CPXsetdblparam(env, CPXPARAM_MIP_Tolerances_MIPGap, 0.05);
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); //output display
 	acumstatus += CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);											/* Do not use presolve */
 	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL); 					/* Turn on traditional search for use with control callbacks */
 	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);									 /* Let MIP callbacks work on the original model */
+
+
 
 	return 0;
 }
@@ -628,7 +637,7 @@ mycutcallback (CPXCENVptr env,
    double   lhs, coeff_z;
    int      count_added, depth;
    double   EPSOBJ = 0.1;
-   double   epsilon_LP = 100.0;
+   double   epsilon_LP = 0.5;
    int      oldnodeid = cutinfo->nodeid;
    double   oldnodeobjval = cutinfo->nodeobjval;
    int		Flag_Integer=0;
@@ -725,17 +734,19 @@ mycutcallback (CPXCENVptr env,
 	 //tolerance_sep = -0.001;
    }
    else{
-	   if (depth == 0 && ABS(objval - old_objval) > epsilon_LP) {
+	  // printf("imp rel: %.6f objval: %.2f old_objval: %.2f \n", (double) ABS(objval - old_objval)/objval*100, objval, old_objval);
+	   /*if (depth == 0 && 100*ABS(objval - old_objval) / objval > epsilon_LP) {
+		   printf("imp rel: %.2f \n", ABS(objval - old_objval) / objval);
 		   flag_solve_SP = 1;
 		   old_objval = objval;
 	   }
-      else{
+      else{*/
 	   if (depth > 0 && depth % 10 == 0 && count_same_node < 2){
 		   flag_solve_SP = 1;
 		   old_objval = objval;
 
 	   }
-      }
+      //}
    }
 
    count_added = 0;
@@ -747,7 +758,8 @@ mycutcallback (CPXCENVptr env,
        goto TERMINATE;
      }
 
-	 if (vers != 3 && Flag_Integer == 1) { //modifiedy by ivan 5172019
+	 //if (vers != 3) { //modifiedy by ivan 5172019
+		 if (vers != 3 && Flag_Integer == 1) { //modifiedy by ivan 5172019
 		 Define_Core_Point();
 		 Update_Core_Point(x); //modifiedy by ivan 5172019
 		 //printf("would have updated\n");
@@ -1485,10 +1497,10 @@ int CPXPUBLIC Heur (CPXCENVptr env, void  *cbdata, int wherefrom, void *cbhandle
 		etaval=0;
 		for(i=0;i<cols;i++)x[i]= 0;
 		for (i = 0; i < NN; i++) {
-			x[pos_z[i][best_assigmnent[i]]]= 1;
+			x[pos_z[i][best_sol_assignments[i]]] = 1;
 			//printf("Assigned %d to hub %d\n",i,best_assigmnent[i]);			
 			for (m = 0; m < NN; m++)
-				etaval += W[i][m] * (c_t[best_assigmnent[i]][best_assigmnent[m]]);
+				etaval += W[i][m] * (c_t[best_sol_assignments[i]][best_sol_assignments[m]]);
 		}
 		x[pos_eta]=etaval;
 		printf("Value of etaval is %.2lf\n",etaval);	

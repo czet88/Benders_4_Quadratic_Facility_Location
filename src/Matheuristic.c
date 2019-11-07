@@ -23,7 +23,7 @@ extern int        *best_assigmnent;
 extern int        *allocation;
 extern int        *best_allocation;
 extern double     *capacity;
-extern double     *avail_capacity;
+//extern double     *avail_capacity;
 extern double     *best_capacity;
 extern double     menor_O;
 extern PORD       *costoso;
@@ -37,57 +37,245 @@ extern int        *best_sol_assignments;
 
 int Construct_Feasible_Solution(double *x, double *dj)
 {
-	int i, k, m, count_c, status;
-	double objvalue;
+	int i, k, m, r, rr, count_c, status, num_modify, target_open_facilties;
+	int l, p, iter, count_open, iter_max, done, target_modify, lower_limit, upper_limit;
+	double rn, sum_cap, keep_perc_open, objvalue;
 	ZVAL *z_cand;
 	int *current_assigmnent;
 	int *current_open_plants;
 	double *current_capacity;
+	int *initial_open_plants;
+	int *which_open_plants;
+	int *modified;
 
 	current_assigmnent = create_int_vector(NN);
 	current_open_plants = create_int_vector(NN);
 	current_capacity = create_double_vector(NN);
-	z_cand = (ZVAL *) calloc(NN,sizeof(ZVAL));
+	initial_open_plants = create_int_vector(NN);
+	which_open_plants = create_int_vector(NN);
+	modified = create_int_vector(NN);
+	z_cand = (ZVAL *)calloc(NN, sizeof(ZVAL));
 
+	iter = 0;
+	iter_max = 10;
+	keep_perc_open = 0.2;
 	count_c = 0;
-	printf("candidate facilites: ");
-	for (k = 0; k < NN; k++){
+
+	printf("candidate facilites in support: ");
+	for (k = 0; k < NN; k++) {
 		current_open_plants[k] = 0;
-		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.001){
+		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.001) {
 			z_cand[count_c].k = k;
 			z_cand[count_c++].value = x[pos_z[k][k]];
-			printf("%d ", k+1);
+			printf("%d ", k + 1);
 		}
 	}
 	printf("\n");
-	qsort((ZVAL *)z_cand, count_c, sizeof(z_cand[0]), Comparevalue_zc);
+	//qsort((ZVAL *)z_cand, count_c, sizeof(z_cand[0]), Comparevalue_zc);
 
-	/*for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			if (x[pos_z[i][k]] > 0.001)
-				printf("z(%d %d): %.2f \n", i, k, x[pos_z[i][k]]);
-		}
-	}*/
-
+	// Obtain initial feasible solution by solving a MILP on the support of the current LP solution of the Benders reformulation
 	status = CFLP_reduced_model(count_c, z_cand, current_assigmnent, current_open_plants);
-	if (status != 0){
+	if (status != 0) {
 		printf("something went wrong when solving reduced CFLP \n");
 		return 0;
 	}
+	//Evaluate quadratic objective function
+	objvalue = Evaluate_Quadratic_Objective(current_open_plants, current_assigmnent, current_capacity);
+	//Disversification-Intensification strategies
+	Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
+	Assignment_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, &objvalue);
+	printf("Matheuristic initial UB: %.2f  open facilities: \n", objvalue);
+	for (i = 0; i < NN; i++) {
+		if (current_open_plants[i] == 1)
+			printf("%d ", i + 1);
+	}
+	printf("\n");
+	//Update incumbent solution
+	if (objvalue < UpperBound) {
+		UpperBound = objvalue;
+		memcpy(best_sol_assignments, current_assigmnent, NN * sizeof(int));
+		memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
+		printf("Improved Upperbound from Matheuristic: %.2f \n", objvalue);
+	}
 
-	/*for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			if (x[pos_z[i][k]] > 0.001)
-				printf("z(%d %d): %.2f \n", i, k, x[pos_z[i][k]]);
+	memcpy(initial_open_plants, current_open_plants, NN * sizeof(int));
+
+	//if (hybrid == 1) {
+	//	for (l = 0; l < NN; l++)
+	//		current_open_plants[l] = initial_open_plants[l];
+	//	count_open = 0;
+	//	sum_cap = 0;
+	//	//Determine how many facilities should change in sol
+	//	for (l = 0; l < NN; l++) {
+	//		if (current_open_plants[l] == 1) {
+	//			which_open_plants[count_open] = l;
+	//			modified[count_open++] = 0;
+	//			sum_cap += b[l][0];
+	//		}
+	//	}
+	//	for (l = 0; l < NN; l++) {
+	//		if (initial_open_plants[l] == 1) {
+	//			current_open_plants[l] = 0;
+	//			do {
+	//				status = 0;
+	//				sum_cap = 0;
+	//				for (r = 0; r < NN; r++) {
+	//					if (initial_open_plants[r] == 0) {
+	//						rn = rand_double();
+	//						if (rn < (double)2 / (NN - count_open) && b[r][0] - O[r] >= 0) {
+	//							current_open_plants[r] = 1;
+	//							sum_cap += b[r][0];
+	//						}
+	//						else
+	//							current_open_plants[r] = 0;
+	//					}
+	//					else {
+	//						if (l != r)
+	//							current_open_plants[r] = 1;
+	//					}
+	//				}
+	//				if (AggregatedDemand <= sum_cap)
+	//					status = Reassign_nodes_red(current_assigmnent, current_open_plants);
+	//			} while (status != 1);
+	//			status = Reassign_nodes_red(current_assigmnent, current_open_plants);
+	//			if (status == 1) {
+	//				//Evaluate quadratic objective function
+	//				objvalue = Evaluate_Quadratic_Objective(current_open_plants, current_assigmnent, current_capacity);
+	//				//Disversification-Intensification strategies
+	//				Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
+	//				Assignment_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, &objvalue);
+	//				//Update incumbent solution
+	//				printf("closed facility: %d  objvalue: %.2f \n", l+1, objvalue);
+	//				if (objvalue < UpperBound) {
+	//					UpperBound = objvalue;
+	//					memcpy(best_sol_assignments, current_assigmnent, NN * sizeof(int));
+	//					memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
+	//					printf("Improved Upperbound from Matheuristic: %.2f \n", objvalue);
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+	//else {
+		// Perturb solution to diversify search in p-median problems
+		for (iter = 0; iter < iter_max; iter++) {
+			for (l = 0; l < NN; l++)
+				current_open_plants[l] = initial_open_plants[l];
+			count_open = 0;
+			sum_cap = 0;
+			//Determine how many facilities should change in sol
+			for (l = 0; l < NN; l++) {
+				if (current_open_plants[l] == 1) {
+					which_open_plants[count_open] = l;
+					modified[count_open++] = 0;
+					sum_cap += b[l][0];
+				}
+			}
+			target_modify = (int)ceil(keep_perc_open*count_open);
+			if (target_modify <= 1) {
+				lower_limit = 1;
+				upper_limit = 2;
+			}
+			else {
+				lower_limit = target_modify - 1;
+				upper_limit = target_modify + 1;
+			}
+			num_modify = getrandom(lower_limit, upper_limit);
+			//Determine the cardinality of new set of open facilities
+			if (hybrid != 0) {
+				target_open_facilties = getrandom(count_open - 1, count_open + 1);
+				if (target_open_facilties < num_modify)
+					target_open_facilties = num_modify;
+				if (count_open >= 2 && target_open_facilties == count_open - 1) {
+					r = getrandom(0, count_open - 1);
+					modified[r] = 1;
+					sum_cap -= b[which_open_plants[r]][0];
+					current_open_plants[which_open_plants[r]] = 0;
+				}
+				else {
+					if (count_open + 1 < NN && target_open_facilties == count_open + 1) {
+						status = 0;
+						do {
+							r = getrandom(0, NN - 1);
+							if (current_open_plants[r] == 0) {
+								current_open_plants[r] = 1;
+								sum_cap += b[r][0];
+								status = 1;
+							}
+						} while (status != 1);
+					}
+				}
+			}
+			//printf("open: %d target_open: %d nummodify: %d \n", count_open, target_open_facilties, num_modify);
+			for (l = 0; l < num_modify; l++) {
+				done = 0;
+				do {
+					r = getrandom(0, count_open - 1);
+					if (modified[r] == 0) {
+						done = 1;
+						modified[r] = 1;
+						sum_cap -= b[which_open_plants[r]][0];
+						status = 0;
+						current_open_plants[which_open_plants[r]] = 0;
+						//printf("r:%d which: %d \n", r, which_open_plants[r]);
+						do {
+							rr = getrandom(0, NN - 1);
+							if (current_open_plants[rr] == 0 && which_open_plants[r] != rr) {
+								current_open_plants[rr] = 1;
+								sum_cap += b[rr][0];
+								status = 1;
+								//	printf("r:%d which: %d rr:%d \n", r, which_open_plants[r], rr);
+							}
+						} while (status != 1);
+					}
+				} while (done != 1);
+			}
+			if (AggregatedDemand <= sum_cap) {
+				status = Reassign_nodes_red(current_assigmnent, current_open_plants);
+				if (status == 1) {
+					//Evaluate quadratic objective function
+					objvalue = Evaluate_Quadratic_Objective(current_open_plants, current_assigmnent, current_capacity);
+					//Disversification-Intensification strategies
+					Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
+					Assignment_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, &objvalue);
+					//Update incumbent solution
+					printf("iter:%d objvalue: %.2f \n", iter, objvalue);
+					if (objvalue < UpperBound) {
+						UpperBound = objvalue;
+						memcpy(best_sol_assignments, current_assigmnent, NN * sizeof(int));
+						memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
+						printf("Improved Upperbound from Matheuristic: %.2f \n", objvalue);
+					}
+				}
+			}
+			else{
+				printf("Iter: %d failed to find feasibel sol, AD: %.2f SumCap: %.2f \n", iter, AggregatedDemand, sum_cap);
+			}
 		}
-	}*/
+	//}
 
-	
-	//memcpy(current_assigmnent, best_assigmnent, NN * sizeof(int));
-	//memcpy(best_open_plants, open_plants, NN * sizeof(int));
+	printf("Matheuristic final UB: %.2f  open facilities: \n", objvalue);
+	for (i = 0; i < NN; i++) {
+		if (current_open_plants[i] == 1)
+			printf("%d ", i + 1);
+	}
+	printf("\n");
 
-	//Evaluate objective function
-	objvalue = 0;
+	free(z_cand);
+	free(current_assigmnent);
+	free(current_open_plants);
+	free(current_capacity);
+	free(initial_open_plants);
+	free(which_open_plants);
+	free(modified);
+
+	return 1;
+}
+
+double Evaluate_Quadratic_Objective(int *current_open_plants, int *current_assigmnent, double *current_capacity)
+{
+	int i, k, m;
+	double objvalue = 0;
 	for (k = 0; k < NN; k++) {
 		current_capacity[k] = b[k][0];
 		if (current_open_plants[k] == 1) {
@@ -99,85 +287,164 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	for (i = 0; i < NN; i++)
 		current_capacity[current_assigmnent[i]] -= O[i];
 
-	
-
-	//Disversification-Intensification strategies
-	Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, objvalue, dj);
-	Assignment_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, objvalue);
-	
-	//Update incumbent solution
-	printf("sol heur: %.2f upper bound: %.2f \n", objvalue, UpperBound);
-	if (objvalue < UpperBound) {
-		UpperBound = objvalue;
-		memcpy(best_sol_assignments, current_assigmnent, NN * sizeof(int));
-		memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
-		printf("Improved Upperbound from Heuristic: %.2f \n", objvalue);
-	}
-
-	free(z_cand);
-	free(current_assigmnent);
-	free(current_open_plants);
-	free(current_capacity);
-
-	return 1;
+	return objvalue;
 }
 
-void Facility_Change_Phase(int *current_assigmnent, int *current_open_plants,  double *current_capacity, ZVAL *z_cand, int count_c, double objvalue, double *dj){
+void Facility_Change_Phase(int *current_assigmnent, int *current_open_plants,  double *current_capacity, ZVAL *z_cand, int count_c, double *objvalue, double *dj){
 
-	int flag;
+	int k, flag;
+	double value;
+	value = *objvalue;
+
+	for (k = 0; k < NN; k++)
+		current_capacity[k] = b[k][0];
+	for (k = 0; k < NN; k++)
+		current_capacity[current_assigmnent[k]] -= O[k];
 
 	flag = 1;
 	while (flag) {
-		flag = clients_swap1_f(current_assigmnent, &objvalue);
+		flag = clients_swap_red(current_assigmnent, current_open_plants, current_capacity, &value);
 		if (flag == 0) {
-			flag = clients_shift1_f(current_assigmnent, &objvalue);
+			flag = clients_shift_red(current_assigmnent, current_open_plants, current_capacity, &value);
 			if (flag == 0 && hybrid == 1) {
-				flag = open_hub_red(current_assigmnent, current_open_plants, current_capacity, &objvalue);
+				flag = open_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
 				if (flag == 0 && hybrid == 1){
-					flag = close_hub_red(current_assigmnent, current_open_plants, current_capacity, &objvalue);
+					flag = close_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
 					if (flag == 0)
-						flag = open_close_hub_red(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
+						flag = open_close_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
 				}
 			}
 		}
 	}
 
+	*objvalue = value;
 }
 
-int Assignment_Change_Phase(int *current_assigmnent, int *current_open_plants, double *current_capacity, ZVAL *z_cand, double objvalue){
+int Assignment_Change_Phase(int *current_assigmnent, int *current_open_plants, double *current_capacity, ZVAL *z_cand, double *objvalue){
 
 	int i, k, m, status, flag;
 	//double objvalue;
+	double value;
 
 	status = Reassign_nodes_red(current_assigmnent, current_open_plants);
 	if (status == 1){
-		objvalue = 0;
+		value = 0;
 		for (k = 0; k < NN; k++) {
-			avail_capacity[k] = b[k][0];
+			current_capacity[k] = b[k][0];
 			if (current_open_plants[k] == 1){
-				objvalue += f[k][0];
+				value += f[k][0];
 			}
 			for (m = 0; m < NN; m++)
-				objvalue += W[k][m] * (c_c[k][current_assigmnent[k]] + c_t[current_assigmnent[k]][current_assigmnent[m]] + c_d[current_assigmnent[m]][m]);
+				value += W[k][m] * (c_c[k][current_assigmnent[k]] + c_t[current_assigmnent[k]][current_assigmnent[m]] + c_d[current_assigmnent[m]][m]);
 		}
 		for (i = 0; i < NN; i++)
-			avail_capacity[current_assigmnent[i]] -= O[i];
+			current_capacity[current_assigmnent[i]] -= O[i];
 
 		flag = 1;
 		while (flag) {
-			flag = clients_swap1_f(current_assigmnent, &objvalue);
+			flag = clients_swap_red(current_assigmnent, current_open_plants, current_capacity, &value);
 			if (flag == 0) {
-				flag = clients_shift1_f(current_assigmnent, &objvalue);
+				flag = clients_shift_red(current_assigmnent, current_open_plants, current_capacity, &value);
 			}
 		}
 
 
-
+		*objvalue = value;
 	}
 	else
 		return 0;
 
 	return 1;
+}
+
+int clients_swap_red(int *assignment, int *current_open_plants, double *current_capacity, double *vs) {
+
+	register i, j;
+	double      MinCostChange = MAX_DOUBLE;
+	double      CanMovCostChange;
+	int      client1, client2;
+	int      plant1, plant2;
+	int      flag = 0;
+
+	for (i = 0; i < NN; i++) {
+		for (j = 0; j < NN; j++) {
+			if (i != j && assignment[i] != assignment[j]) {
+				if (current_capacity[assignment[i]] + O[i] - O[j] >= 0 && current_capacity[assignment[j]] + O[j] - O[i] >= 0) {
+					//CanMovCostChange=suma2_F_ijkm(i, j, assignment[j], assignment[i], assignment);
+					//CanMovCostChange-=suma2_F_ijkm(i, j, assignment[i], assignment[j], assignment);
+					CanMovCostChange = sum2_F_ijkm(i, j, assignment[j], assignment[i], assignment);
+					CanMovCostChange -= sum2_F_ijkm(i, j, assignment[i], assignment[j], assignment);
+					if (CanMovCostChange < 0) {
+						client1 = i;
+						plant1 = assignment[i];
+						client2 = j;
+						plant2 = assignment[j];
+						MinCostChange = CanMovCostChange;
+						flag = 1;
+						break;
+					}
+				}
+			}
+		}
+		if (flag == 1)
+			break;
+	}
+
+	if (MinCostChange < 0) {
+		current_capacity[plant1] += O[client1] - O[client2];
+		current_capacity[plant2] += O[client2] - O[client1];
+		assignment[client1] = plant2;
+		assignment[client2] = plant1;
+		*vs += MinCostChange;
+		return 1;
+	}
+	return 0;
+}
+
+
+int clients_shift_red(int *assignment, int *current_open_plants, double *current_capacity, double *vs) {
+
+	register i, k;
+	double      MinCostChange = MAX_DOUBLE;
+	double      CanMovCostChange;
+	int      client;
+	int      plant1, plant2;
+	//int      *open_plants;
+	int      flag = 0;
+
+	for (i = 0; i < NN; i++) {
+		for (k = 0; k < NN; k++) {
+			if (current_open_plants[k] && k != assignment[i]) {
+				if (current_capacity[k] - O[i] >= 0) {
+					//CanMovCostChange=suma_F_ijkm(i,k, assignment)-suma_F_ijkm(i, assignment[i], assignment);
+					CanMovCostChange = sum_F_ijkm(i, k, assignment) - sum_F_ijkm(i, assignment[i], assignment);
+					if (b[assignment[i]][0] == current_capacity[assignment[i]] + O[i])
+						CanMovCostChange -= f[assignment[i]][0];
+					if (CanMovCostChange < 0) {
+						client = i;
+						plant1 = assignment[i];
+						plant2 = k;
+						MinCostChange = CanMovCostChange;
+						flag = 1;
+						break;
+					}
+				}
+			}
+		}
+		if (flag == 1)
+			break;
+	}
+
+	if (MinCostChange < 0) {
+		current_capacity[plant1] += O[client];
+		current_capacity[plant2] -= O[client];
+		if (b[assignment[client]][0] == current_capacity[assignment[client]])
+			current_open_plants[plant1] = 0;
+		assignment[client] = plant2;
+		*vs += MinCostChange;
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -412,7 +679,7 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	//CPXsetintparam(env,CPX_PARAM_MIPEMPHASIS,1);//0:balanced; 1:feasibility; 2:optimality,3:bestbound, 4:hiddenfeas
 	CPXsetdblparam(env, CPX_PARAM_TILIM, 1000); // time limit
 	//CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
-	CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.016); // e-optimal solution (%gap)
+	CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.00001); // e-optimal solution (%gap)
 	//CPXsetdblparam(env,CPX_PARAM_EPAGAP, 0.0000000001); // e-optimal solution (absolute value)
 	//CPXsetdblparam(env,CPX_PARAM_EPINT, 0.0000000001); // integer precision
 	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
@@ -487,7 +754,10 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	CPXgetmipx(env, lp, sol_x, 0, numcols - 1);  // obtain the values of the decision variables
 	for (i = 0; i < NN; i++) {
 		for (k = 0; k < count_c; k++) {
-			if (sol_x[pos_z_red[i][k]] > 0.5) assigmnents[i] = z_cand[k].k;   //We've saved the local assignments.
+			if (sol_x[pos_z_red[i][k]] > 0.5) {
+				assigmnents[i] = z_cand[k].k;
+				//printf("%d(%d) ", i + 1, assigmnents[i] + 1);
+			}
 		}
 	}
 
@@ -498,11 +768,11 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		}
 	}
 
-	printf("UB: %.2f initial facilities: ", UBOptUFLP);
+	printf("LB: %.2f UB: %.2f initial facilities: ", UFLPrelval, UBOptUFLP);
 	for (i = 0; i < count_c; i++) {
 		if (sol_x[pos_z_red[z_cand[i].k][i]] > 0.5) {
 			open_plants[z_cand[i].k] = 1;
-			printf("%d ", z_cand[i].k + 1);
+			printf("%d (%.2f) ", z_cand[i].k + 1, f[z_cand[i].k][0]);
 		}
 	}
 	printf("\n");
@@ -552,7 +822,7 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 
 	for (i = 0; i < NN; i++) {
 		if (fixed_zero[i] == 0 && current_open_plants[i] == 0 && b[i][0] - O[i] >= 0) {
-			//open_plants[i] = 1;
+			//current_open_plants[i] = 1;
 			memcpy(allocation, current_assigmnent, NN * sizeof(int));
 			memcpy(capacity, current_capacity, NN * sizeof(double));
 			capacity[allocation[i]] += O[i];
@@ -584,14 +854,14 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 				plant1 = i;
 				MinCostChange = valor;
 			}
-			//open_plants[i] = 0;
+			//current_open_plants[i] = 0;
 		}
 	}
 
 
 	if (MinCostChange < *vs) {
 		memcpy(current_assigmnent, best_allocation, NN * sizeof(int));
-		//memcpy(avail_capacity, best_capacity, NN * sizeof(double));
+		memcpy(current_capacity, best_capacity, NN * sizeof(double));
 		current_open_plants[plant1] = 1;
 		*vs = MinCostChange;
 		return 1;
@@ -619,6 +889,7 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 		if (current_open_plants[i] == 1) {
 			flag = 0;
 			//open_plants[i] = 0;
+			//current_open_plants[i] = 0;
 			memcpy(allocation, current_assigmnent, NN * sizeof(int));
 			memcpy(capacity, current_capacity, NN * sizeof(double));
 			for (j = 1; j < NN; j++) {
@@ -667,12 +938,12 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 					MinCostChange = valor;
 				}
 			}
-			// open_plants[i] = 1;
+			//current_open_plants[i] = 1;
 		}
 	}
 
 	if (MinCostChange < *vs) {
-		memcpy(current_capacity, best_allocation, NN * sizeof(int));
+		memcpy(current_assigmnent, best_allocation, NN * sizeof(int));
 		memcpy(current_capacity, best_capacity, NN * sizeof(double));
 		current_open_plants[plant1] = 0;
 		*vs = MinCostChange;
@@ -684,7 +955,7 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 }
 
 
-int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, ZVAL *z_cand, int count_c, double *vs, double *dj)
+int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
 {
 	int i, j, k, m, kk;
 	double   MinCostChange;
@@ -697,11 +968,11 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 	MinCostChange = *vs;
 
 	for (k = 0; k < NN; k++) {
-		for (m = 0; m < count_c; m++) {
-			if (fixed_zero[k] == 0 && current_open_plants[k] == 0 && b[k][0] - O[k] > 0 && current_open_plants[z_cand[m].k] == 1) {
+		for (m = 0; m < NN; m++) {
+			if (fixed_zero[k] == 0 && current_open_plants[m] == 1 && current_open_plants[k] == 0 && b[k][0] - O[k] > 0 ) {
 				flag = 0;
 				current_open_plants[k] = 1;
-				current_open_plants[z_cand[m].k] = 0;
+				current_open_plants[m] = 0;
 				memcpy(allocation, current_assigmnent, NN * sizeof(int));
 				memcpy(capacity, current_capacity, NN * sizeof(double));
 				node1 = allocation[k];
@@ -709,11 +980,11 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 				allocation[k] = k;
 				capacity[k] -= O[k];
 				for (j = 1; j < NN; j++) {
-					node = costoso[z_cand[m].k].A[j].j;
-					if (capacity[node] < b[node][0] && capacity[node] - O[z_cand[m].k] >= 0) {
-						capacity[node] -= O[z_cand[m].k];
-						allocation[z_cand[m].k] = node;
-						capacity[z_cand[m].k] = b[z_cand[m].k][0];
+					node = costoso[m].A[j].j;
+					if (capacity[node] < b[node][0] && capacity[node] - O[m] >= 0) {
+						capacity[node] -= O[m];
+						allocation[m] = node;
+						capacity[m] = b[m][0];
 						flag = 1;
 						break;
 					}
@@ -721,16 +992,16 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 				if (flag == 1) {
 					for (j = 0; j < NN; j++) {
 						node = orden_O[NN - j - 1].hub;
-						if (allocation[node] == z_cand[m].k) {
+						if (allocation[node] == m) {
 							for (kk = 1; kk < NN; kk++) {
 								node2 = costoso[node].A[kk].j;
-								if (capacity[node2] < b[node2][0] && capacity[node2] - O[node] >= 0 && node2 != z_cand[m].k) {
+								if (capacity[node2] < b[node2][0] && capacity[node2] - O[node] >= 0 && node2 != m) {
 									capacity[node2] -= O[node];
 									allocation[node] = node2;
 									break;
 								}
 							}
-							if (allocation[node] == z_cand[m].k) {
+							if (allocation[node] == m) {
 								flag = 0;
 								break;
 							}
@@ -767,7 +1038,7 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 					}
 				}
 				current_open_plants[k] = 0;
-				current_open_plants[z_cand[m].k] = 1;
+				current_open_plants[m] = 1;
 				allocation[k] = node1;
 			}
 		}
@@ -1025,7 +1296,4 @@ TERMINATE:
 	//free(x);
 	return statusP;
 }
-
-
-
 

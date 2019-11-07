@@ -151,6 +151,7 @@ int Reassign_nodes(int *);
 void Ordenar_costos(void);
 int Compararcostos(const void *, const void *);
 int Compararvalor_fb(const void *, const void *);
+double Evaluate_Quadratic_Objective(int *, int *, double *);
 
 void SSCFLP_model(void);
 void Local_Search(void);
@@ -210,14 +211,15 @@ void Benders_BC(void);
  void c_vector(char **vector,int n,char *s);
  void Check_CP_MW(double *z_sol,int i, int j);
 
-
+ int clients_shift_red(int *, int *, double *, double *);
+ int clients_swap_red(int *, int *, double *, double *);
  void Benders_root_node_heur(void);
  int Construct_Feasible_Solution(double *, double *);
  int CFLP_reduced_model(int, ZVAL *, int *, int *);
  int Reassign_nodes_red(int *, int *);
- void Facility_Change_Phase(int *, int *, double *, ZVAL *, int, double, double *);
- int Assignment_Change_Phase(int *, int *, double *, ZVAL *, double);
- int open_close_hub_red(int *, int *, double *, ZVAL *, int, double *, double *);
+ void Facility_Change_Phase(int *, int *, double *, ZVAL *, int, double *, double *);
+ int Assignment_Change_Phase(int *, int *, double *, ZVAL *, double *);
+ int open_close_hub_red(int *, int *, double *, double *);
  int open_hub_red(int *, int *, double *, double *);
  int close_hub_red(int *, int *, double *, double *);
 

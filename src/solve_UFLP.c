@@ -250,7 +250,7 @@ void SSCFLP_model(void)
     //CPXsetintparam(env,CPX_PARAM_MIPEMPHASIS,1);//0:balanced; 1:feasibility; 2:optimality,3:bestbound, 4:hiddenfeas
     CPXsetdblparam(env,CPX_PARAM_TILIM,7200); // time limit
     //CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
-    CPXsetdblparam(env,CPX_PARAM_EPGAP, 0.016); // e-optimal solution (%gap)
+   // CPXsetdblparam(env,CPX_PARAM_EPGAP, 0.00001); // e-optimal solution (%gap)
     //CPXsetdblparam(env,CPX_PARAM_EPAGAP, 0.0000000001); // e-optimal solution (absolute value)
     //CPXsetdblparam(env,CPX_PARAM_EPINT, 0.0000000001); // integer precision
 	CPXsetintparam(env,CPX_PARAM_THREADS, 1); // Number of threads to use
@@ -305,15 +305,14 @@ void SSCFLP_model(void)
 	
 	// retrive solution values
 	CPXgetmipobjval(env,lp,&UFLPrelval);
-	printf("MIP value: %.2f \n", UFLPrelval);
+	//printf("MIP value: %.2f \n", UFLPrelval);
 	
 
 	//CPXgetbestobjval(env,lp,&value);  //best lower bound in case thew problem was not solve to optimality
 
     end = clock();
     cputime = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Time to solve SSCFLP: %.2f \n", cputime);
-
+   
 	/*Retrieve the solutiona and calculate corresponding quadratic costs*/
 	numcols=CPXgetnumcols(env,lp);
 	localx=create_double_vector(numcols);
@@ -321,9 +320,13 @@ void SSCFLP_model(void)
 	CPXgetmipx(env,lp,localx,0, numcols-1);  // obtain the values of the decision variables
 	for(i=0;i<NN;i++){
 		for(k=0;k<NN;k++){
-			if(localx[pos_z[i][k]]>0.5) local_assign[i]=k;   //We've saved the local assignments.
+			if (localx[pos_z[i][k]] > 0.5) {
+				local_assign[i] = k;
+				//printf("%d(%d) ", i+1, local_assign[i]+1);
+			}
 		}
 	}
+	//printf("\n");
 
 	UBOptUFLP=UFLPrelval;
 	for(i=0;i<NN;i++){
@@ -331,6 +334,16 @@ void SSCFLP_model(void)
 			UBOptUFLP+=W[i][j]*(c_t[local_assign[i]][local_assign[j]]);
 		}
 	}
+	UpperBound = UBOptUFLP;
+
+	printf("Initial LB from SSCFLP: %.2f UB: %.2f open facilities: ", UFLPrelval, UpperBound);
+	for (i = 0; i < NN; i++) {
+		if (localx[pos_z[i][i]] > 0.5) {
+			printf("%d (%.2f) ", i + 1, f[i][0]);
+		}
+	}
+	printf("\n");
+	printf("Time to solve SSCFLP: %.2f \n", cputime);
 
  //   index=0;
 	//for (i = 0; i < NN; i++) {
@@ -370,11 +383,12 @@ void SSCFLP_model(void)
 
 	//prevsols[countsols].preeta=0;     //Carlos's modification
 	//prevsols[countsols].num_comb=0;    //Carlos's modification
-	//for (k = 0; k < NN; k++) {
-	//	if (open_plants[k] >0.5){
-	//		value += f[k][0];
-	//		printf("%d ", k + 1);
-	//	}
+	/*for (k = 0; k < NN; k++) {
+		if (open_plants[k] > 0.5) {
+			value += f[k][0];
+			printf("%d ", k + 1);
+		}
+	}*/
 	//	prevsols[countsols].indhub[k]=best_assigmnent[k];   //Carlos's modification
 	//	prevsols[countsols].num_comb++;
 	//	for (m = 0; m < NN; m++){
@@ -386,7 +400,7 @@ void SSCFLP_model(void)
 	//countsols++;         //Carlos's modification
 	//prevsols[countsols].indhub=create_int_vector(NN);   //Carlos's modification
 	//printf("\n");
-	printf("Initial Lowerbound: %lf \t Upperbound from SSCFLP: %lf\t Upperbound from optimal SSCFLP: %lf \n",UFLPrelval, UpperBound, UBOptUFLP);
+	//printf("Initial Lowerbound: %lf \t Upperbound from SSCFLP: %lf\t Upperbound from optimal SSCFLP: %lf \n",UFLPrelval, UpperBound, UBOptUFLP);
 	UBsearchUFLP=UpperBound;
 	//getchar();
 

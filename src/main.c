@@ -101,17 +101,18 @@ int main (int argc, char *argv[])
 	 printf(" %s  alpha= %0.2f \n", instance, trans);
 	 //Obtain initial solution from a SSCFLP
 	 start = clock();
-	 //if(vers!=0) SSCFLP_model();
-	 //if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
-	 //end = clock();
-	 //cputime_heur = (double)(end - start) / CLOCKS_PER_SEC;
+	 UpperBound = MAX_DOUBLE;
+	// if(vers!=0) SSCFLP_model();
+	// if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
+	// end = clock();
+	// cputime_heur = (double)(end - start) / CLOCKS_PER_SEC;
 	 out = open_file(output_text, "a+");
 	 fprintf(out, "%d;%s;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid);
 	 fclose(out);
 	 //Solve root node
 	 Benders_root_node_heur();
 	 //Benders_root_node();
-	 //Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
+	 Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
 	 end = clock();
 	 cputime = (double)(end - start) / CLOCKS_PER_SEC;
 	 printf("\nFInal CPU time: %.2lf\n", cputime);

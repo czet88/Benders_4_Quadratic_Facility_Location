@@ -125,7 +125,12 @@ double Det_Iterated_Local_Search(void) {
 			objvalue1 = objvalue;
 			memcpy(best_assigmnent, best_assigmnent1, NN* sizeof(int));
 			memcpy(best_open_plants, open_plants, NN* sizeof(int));
-			printf("Improved Upperbound from PLS: %.2f \n", objvalue);
+			printf("Improved Upperbound from PLS: %.2f  open facilities: ", objvalue);
+			for (k = 0; k < NN; k++) {
+				if (best_open_plants[k] > 0.5)
+					printf("%d ", k + 1);
+			}
+			printf("\n");
 			count_open = 0;
 			/**********************Carlos's modifications*************************/
 			prevsols[countsols].preeta=0;     //Carlos's modification
