@@ -941,7 +941,7 @@ TERMINATE:
        }
 	}
 
-	free(x);
+	/*free(x);
 	free(dj);
 	free(z_open);
 	free(z_closed);
@@ -953,7 +953,7 @@ TERMINATE:
 	free(priority);
 	free(cand_hubs);
 	free(fixed_one);
-	free(fixed_zero);
+	free(fixed_zero);*/
 }
 
 
