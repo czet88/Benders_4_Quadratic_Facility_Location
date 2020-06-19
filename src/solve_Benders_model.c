@@ -554,7 +554,7 @@ void Benders_BC(void)
 	printf("Optimal set of hubs: ");
 	fprintf(out, "hubs:");
 	for (i = 0; i<NN; i++){
-		if (x[pos_z[i][i]] > 0.5) {
+		if (x[pos_z[i][i]] > 0.5 && fixed_zero[i]==0) {
 			printf("%d ", i + 1);
 			fprintf(out,"%d ", i + 1);
 		}
