@@ -795,123 +795,123 @@ void Benders_root_node_heur(void)
 
 	//Now solving the Integer Program
 	 /******************************************************************************************/
-	SetBranchandCutParam(env, lp);
-	if (vers != 2) CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-	status = CPXcopyorder(env, lp, NN*NN, indices, priority, NULL);
+	//SetBranchandCutParam(env, lp);
+	//if (vers != 2) CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
+	//status = CPXcopyorder(env, lp, NN*NN, indices, priority, NULL);
 
-	cutinfo.lp = lp;
-	cutinfo.numcols = cur_numcols;
-	printf("Columns loaded in Cplex: %d \n", cur_numcols);
-	cutinfo.x = (double*)malloc(cur_numcols * sizeof(double));
-	if (cutinfo.x == NULL) {
-		fprintf(stderr, "No memory for solution values.\n");
-		goto TERMINATE;
-	}
+	//cutinfo.lp = lp;
+	//cutinfo.numcols = cur_numcols;
+	//printf("Columns loaded in Cplex: %d \n", cur_numcols);
+	//cutinfo.x = (double*)malloc(cur_numcols * sizeof(double));
+	//if (cutinfo.x == NULL) {
+	//	fprintf(stderr, "No memory for solution values.\n");
+	//	goto TERMINATE;
+	//}
 
-	/* Set up to use MIP callback */
+	///* Set up to use MIP callback */
 
-	status = CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo);
-	if (status)  goto TERMINATE;
+	//status = CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo);
+	//if (status)  goto TERMINATE;
 
-	status = CPXsetlazyconstraintcallbackfunc(env, mycutcallback, &cutinfo);
-	if (status)  goto TERMINATE;
+	//status = CPXsetlazyconstraintcallbackfunc(env, mycutcallback, &cutinfo);
+	//if (status)  goto TERMINATE;
 
-	/* Code to use Heuristic Callback*/
-  /************************************************/
-	status = CPXsetheuristiccallbackfunc(env, Heur, NULL);
-	
-	// Add best solution from Matheuristic to MIP
-	index = 0;
-	eta_cost = 0;
-	for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			if (best_sol_assignments[i] == k) {
-				initial_x[index++] = 1;
-				if (i == k)
-					eta_cost += f[i][0];
-				else
-					eta_cost += (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
-			}
-			else
-				initial_x[index++] = 0;
-		}
-	}
-	i_vector(&beg, 1, "open_cplex:4");
-	i_vector(&effortlevel, 1, "open_cplex:4");
-	i_vector(&varindices, cur_numcols, "open_cplex:6");
-	d_vector(&values, cur_numcols, "open_cplex:7");
-	beg[0] = 0;
-	effortlevel[0] = 5;
-	for (i = 0; i < cur_numcols-1; i++) {
-		values[i] = (double) initial_x[i];
-		//values[i] = 0;
-		varindices[i] = i;
-	//	if (values[i] > 0.001)
-		//	printf("%.2f, %d \n", values[i], varindices[i]);
-	}
-	values[cur_numcols - 1] = (double) (UpperBound - eta_cost);
-	//values[cur_numcols - 1] = UpperBound;
-	varindices[cur_numcols - 1] = cur_numcols - 1;
-	printf("glonumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN*NN, UpperBound, eta_cost);
-	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
-	printf("status: %d \n", status);
-	free(beg);
-	free(effortlevel);
-	free(varindices);
-	free(values);
+	///* Code to use Heuristic Callback*/
+ // /************************************************/
+	//status = CPXsetheuristiccallbackfunc(env, Heur, NULL);
+	//
+	//// Add best solution from Matheuristic to MIP
+	//index = 0;
+	//eta_cost = 0;
+	//for (i = 0; i < NN; i++) {
+	//	for (k = 0; k < NN; k++) {
+	//		if (best_sol_assignments[i] == k) {
+	//			initial_x[index++] = 1;
+	//			if (i == k)
+	//				eta_cost += f[i][0];
+	//			else
+	//				eta_cost += (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
+	//		}
+	//		else
+	//			initial_x[index++] = 0;
+	//	}
+	//}
+	//i_vector(&beg, 1, "open_cplex:4");
+	//i_vector(&effortlevel, 1, "open_cplex:4");
+	//i_vector(&varindices, cur_numcols, "open_cplex:6");
+	//d_vector(&values, cur_numcols, "open_cplex:7");
+	//beg[0] = 0;
+	//effortlevel[0] = 5;
+	//for (i = 0; i < cur_numcols-1; i++) {
+	//	values[i] = (double) initial_x[i];
+	//	//values[i] = 0;
+	//	varindices[i] = i;
+	////	if (values[i] > 0.001)
+	//	//	printf("%.2f, %d \n", values[i], varindices[i]);
+	//}
+	//values[cur_numcols - 1] = (double) (UpperBound - eta_cost);
+	////values[cur_numcols - 1] = UpperBound;
+	//varindices[cur_numcols - 1] = cur_numcols - 1;
+	//printf("glonumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN*NN, UpperBound, eta_cost);
+	////status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
+	//printf("status: %d \n", status);
+	//free(beg);
+	//free(effortlevel);
+	//free(varindices);
+	//free(values);
 
-	CPXmipopt(env, lp);  //solve the integer program
+	//CPXmipopt(env, lp);  //solve the integer program
 
-	i = CPXgetstat(env, lp);
-	if (i == 101)
-		printf("Optimal solution found\n");
-	else if (i == 102)
-		printf("e-optimal solution found\n");
-	else if (i == 107)
-		printf("Time limit reached\n");
-	else
-		printf("Unknown stopping criterion (%d)\n", i);
+	//i = CPXgetstat(env, lp);
+	//if (i == 101)
+	//	printf("Optimal solution found\n");
+	//else if (i == 102)
+	//	printf("e-optimal solution found\n");
+	//else if (i == 107)
+	//	printf("Time limit reached\n");
+	//else
+	//	printf("Unknown stopping criterion (%d)\n", i);
 
-	// out = open_file("result_CHLP_3index.txt","a+");
+	//// out = open_file("result_CHLP_3index.txt","a+");
 
-	// retrive solution values
-	CPXgetmipobjval(env, lp, &value);
-	printf("Upper bound: %f   ", value);
-	best_upper_bound = value;
-	//fprintf(out," %.3f  ", value);
-	// If CPLEX was able to find the optimal solution, the previous function provides the optimal solution value
-	//if not, it provides the best upper bound
+	//// retrive solution values
+	//CPXgetmipobjval(env, lp, &value);
+	//printf("Upper bound: %f   ", value);
+	//best_upper_bound = value;
+	////fprintf(out," %.3f  ", value);
+	//// If CPLEX was able to find the optimal solution, the previous function provides the optimal solution value
+	////if not, it provides the best upper bound
 
-	CPXgetbestobjval(env, lp, &value);  //best lower bound in case thew problem was not solve to optimality
-	best_lower_bound = value;
-	printf("Lower bound: %f   ", value);
+	//CPXgetbestobjval(env, lp, &value);  //best lower bound in case thew problem was not solve to optimality
+	//best_lower_bound = value;
+	//printf("Lower bound: %f   ", value);
 
-	nodecount = CPXgetnodecnt(env, lp);
-	printf(" the number of BB nodes : %ld   ", nodecount);
-	//add one line of code I will give you
+	//nodecount = CPXgetnodecnt(env, lp);
+	//printf(" the number of BB nodes : %ld   ", nodecount);
+	////add one line of code I will give you
 
-	end = clock();
-	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Bender's Time: %.2f \n", cputime);
+	//end = clock();
+	//cputime = (double)(end - start) / CLOCKS_PER_SEC;
+	//printf("Bender's Time: %.2f \n", cputime);
 
 
-	CPXgetmipx(env, lp, x, 0, cur_numcols - 1);  // obtain the values of the decision variables
+	//CPXgetmipx(env, lp, x, 0, cur_numcols - 1);  // obtain the values of the decision variables
 
-	index = 0;
+	//index = 0;
 
-	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound,  cputime, (best_upper_bound-best_lower_bound)*100/ best_upper_bound, nodecount);
-	printf("Optimal set of hubs: ");
-	fprintf(out, "hubs:");
-	for (i = 0; i < NN; i++) {
-		if (x[pos_z[i][i]] > 0.5) {
-			printf("%d ", i + 1);
-			fprintf(out, "%d ", i + 1);
-		}
-	}
-	printf("eta: %.2f \n", x[cur_numcols - 1]);
-	fprintf(out, ";");
-	fclose(out);
+	//out = open_file(output_text, "a+");
+	//fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound,  cputime, (best_upper_bound-best_lower_bound)*100/ best_upper_bound, nodecount);
+	//printf("Optimal set of hubs: ");
+	//fprintf(out, "hubs:");
+	//for (i = 0; i < NN; i++) {
+	//	if (x[pos_z[i][i]] > 0.5) {
+	//		printf("%d ", i + 1);
+	//		fprintf(out, "%d ", i + 1);
+	//	}
+	//}
+	//printf("eta: %.2f \n", x[cur_numcols - 1]);
+	//fprintf(out, ";");
+	//fclose(out);
 
 
 

@@ -254,7 +254,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 		}
 	//}
 
-	printf("Matheuristic final UB: %.2f  open facilities: \n", UpperBound);
+	printf("Matheuristic final UB: %.2f  open facilities: \n", objvalue);
 	for (i = 0; i < NN; i++) {
 		if (current_open_plants[i] == 1)
 			printf("%d ", i + 1);
