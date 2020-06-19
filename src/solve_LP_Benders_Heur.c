@@ -951,9 +951,9 @@ TERMINATE:
 	free(globvarind);
 	free(indices);
 	free(priority);
-	free(cand_hubs);
-	free(fixed_one);
-	free(fixed_zero);
+	//free(cand_hubs);
+	//free(fixed_one);
+	//free(fixed_zero);
 }
 
 
