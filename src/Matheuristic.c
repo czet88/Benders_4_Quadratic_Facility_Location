@@ -173,8 +173,14 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			}
 			target_modify = (int)ceil(keep_perc_open*count_open);
 			if (target_modify <= 1) {
-				lower_limit = 1;
-				upper_limit = 2;
+				if (count_open > 1) {
+					lower_limit = 1;
+					upper_limit = 2;
+				}
+				else {
+					lower_limit = 1;
+					upper_limit = 1;
+				}
 			}
 			else {
 				lower_limit = target_modify - 1;
@@ -183,9 +189,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			num_modify = getrandom(lower_limit, upper_limit);
 			//Determine the cardinality of new set of open facilities
 			if (hybrid != 0) {
-				target_open_facilties = getrandom(count_open - 1, count_open + 1);
-				if (target_open_facilties < num_modify)
-					target_open_facilties = num_modify;
+				target_open_facilties = getrandom(max(1,count_open - 1), count_open + 1);
 				if (count_open >= 2 && target_open_facilties == count_open - 1) {
 					r = getrandom(0, count_open - 1);
 					modified[r] = 1;
@@ -206,7 +210,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 					}
 				}
 			}
-			//printf("open: %d target_open: %d nummodify: %d \n", count_open, target_open_facilties, num_modify);
+			//printf("open: %d p: %d nummodify: %d \n", count_open, p_hubs, num_modify);
 			for (l = 0; l < num_modify; l++) {
 				done = 0;
 				do {
@@ -247,9 +251,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 						printf("Improved Upperbound from Matheuristic: %.2f \n", objvalue);
 					}
 				}
-			}
-			else{
-				printf("Iter: %d failed to find feasibel sol, AD: %.2f SumCap: %.2f \n", iter, AggregatedDemand, sum_cap);
 			}
 		}
 	//}
