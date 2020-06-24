@@ -85,7 +85,7 @@ int main (int argc, char *argv[])
  t = time(NULL);
  tm = localtime(&t);
  out = open_file(output_text, "a+");
- fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;BBnodes;Hubs;CPU_all;Missed\n", asctime(tm));
+ fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed\n", asctime(tm));
  fclose(out);
  for(i=0; i<num_inst; i++) {
 	 use_firstsolution=1;
@@ -97,7 +97,7 @@ int main (int argc, char *argv[])
 	 fscanf(ini,"%d",&hybrid);
 	 fscanf(ini,"%s",&instance);
 	 //fscanf(ini,"%d %lf %lf %lf",&pp,&coll,&trans,&distr);
-	 read_instance(instance, 1, coll, trans, distr,APset);
+	 read_instance(instance, 5, coll, trans, distr,APset);
 	 printf(" %s  alpha= %0.2f \n", instance, trans);
 	 //Obtain initial solution from a SSCFLP
 	 start = clock();
@@ -112,7 +112,7 @@ int main (int argc, char *argv[])
 	 //Solve root node
 	 Benders_root_node_heur();
 	 //Benders_root_node();
-	 Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
+	 //Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
 	 end = clock();
 	 cputime = (double)(end - start) / CLOCKS_PER_SEC;
 	 printf("\nFInal CPU time: %.2lf\n", cputime);

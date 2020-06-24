@@ -37,7 +37,7 @@ extern int        *best_sol_assignments;
 
 int Construct_Feasible_Solution(double *x, double *dj)
 {
-	int i, k, m, r, rr, count_c, status, num_modify, target_open_facilties;
+	int i, k, m, r, rr, count_c, status, num_modify, target_open_facilties, min_range;
 	int l, p, iter, count_open, iter_max, done, target_modify, lower_limit, upper_limit;
 	double rn, sum_cap, keep_perc_open, objvalue;
 	ZVAL *z_cand;
@@ -187,9 +187,39 @@ int Construct_Feasible_Solution(double *x, double *dj)
 				upper_limit = target_modify + 1;
 			}
 			num_modify = getrandom(lower_limit, upper_limit);
+			for (l = 0; l < num_modify; l++) {
+				done = 0;
+				do {
+					r = getrandom(0, count_open - 1);
+					//printf("num_modify = %d, r=%d, modified[0] = %d, modified[1] = %d, count_open = %d \n", num_modify, r, modified[0], modified[1], count_open);
+					//if (r == 1 && modified[r] == 1)
+					//	exit(8);
+					if (modified[r] == 0) {
+						done = 1;
+						modified[r] = 1;
+						sum_cap -= b[which_open_plants[r]][0];
+						status = 0;
+						current_open_plants[which_open_plants[r]] = 0;
+						//printf("r:%d which: %d \n", r, which_open_plants[r]);
+						do {
+							rr = getrandom(0, NN - 1);
+							if (current_open_plants[rr] == 0 && which_open_plants[r] != rr) {
+								current_open_plants[rr] = 1;
+								sum_cap += b[rr][0];
+								status = 1;
+								//	printf("r:%d which: %d rr:%d \n", r, which_open_plants[r], rr);
+							}
+						} while (status != 1);
+					}
+				} while (done != 1);
+			}
 			//Determine the cardinality of new set of open facilities
 			if (hybrid != 0) {
-				target_open_facilties = getrandom(max(1,count_open - 1), count_open + 1);
+				if (count_open - 1 > 0)
+					min_range = count_open - 1;
+				else
+					min_range = 1;
+				target_open_facilties = getrandom(min_range, count_open + 1);
 				if (count_open >= 2 && target_open_facilties == count_open - 1) {
 					r = getrandom(0, count_open - 1);
 					modified[r] = 1;
@@ -211,29 +241,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 				}
 			}
 			//printf("open: %d p: %d nummodify: %d \n", count_open, p_hubs, num_modify);
-			for (l = 0; l < num_modify; l++) {
-				done = 0;
-				do {
-					r = getrandom(0, count_open - 1);
-					if (modified[r] == 0) {
-						done = 1;
-						modified[r] = 1;
-						sum_cap -= b[which_open_plants[r]][0];
-						status = 0;
-						current_open_plants[which_open_plants[r]] = 0;
-						//printf("r:%d which: %d \n", r, which_open_plants[r]);
-						do {
-							rr = getrandom(0, NN - 1);
-							if (current_open_plants[rr] == 0 && which_open_plants[r] != rr) {
-								current_open_plants[rr] = 1;
-								sum_cap += b[rr][0];
-								status = 1;
-								//	printf("r:%d which: %d rr:%d \n", r, which_open_plants[r], rr);
-							}
-						} while (status != 1);
-					}
-				} while (done != 1);
-			}
+
 			if (AggregatedDemand <= sum_cap) {
 				status = Reassign_nodes_red(current_assigmnent, current_open_plants);
 				if (status == 1) {
