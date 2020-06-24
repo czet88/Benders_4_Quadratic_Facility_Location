@@ -97,7 +97,7 @@ int main (int argc, char *argv[])
 	 fscanf(ini,"%d",&hybrid);
 	 fscanf(ini,"%s",&instance);
 	 //fscanf(ini,"%d %lf %lf %lf",&pp,&coll,&trans,&distr);
-	 read_instance(instance, 5, coll, trans, distr,APset);
+	 read_instance(instance, 5-4*APset, coll, trans, distr,APset);
 	 printf(" %s  alpha= %0.2f \n", instance, trans);
 	 //Obtain initial solution from a SSCFLP
 	 start = clock();
