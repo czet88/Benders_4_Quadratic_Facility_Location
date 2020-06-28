@@ -724,7 +724,7 @@ int Reassign_nodes(int *best_assigmnent1)
 	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 4); //different levels of output display
 	CPXsetintparam(env, CPX_PARAM_MIPINTERVAL, 1);
 	//CPXsetintparam(env,CPX_PARAM_MIPEMPHASIS,1);//0:balanced; 1:feasibility; 2:optimality,3:bestbound, 4:hiddenfeas
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 500); // time limit
 	CPXsetdblparam(env, CPX_PARAM_TRELIM, 14000); // B&B memory limit
 	//CPXsetdblparam(env,CPX_PARAM_EPGAP, 0.0000000001); // e-optimal solution (%gap)
 	//CPXsetdblparam(env,CPX_PARAM_EPAGAP, 0.0000000001); // e-optimal solution (absolute value)
