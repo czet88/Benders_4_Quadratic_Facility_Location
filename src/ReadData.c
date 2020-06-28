@@ -262,7 +262,8 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 void initialize_memory(void) {
 
   int i;
-
+  cpuFacLocIni = 0;
+  cpuGenAss = 0;
   /****Carlos's modifications for initializing the previous solutions*****/
   countsols=0;
   prevsols=(Solpool *) calloc(NN, sizeof(Solpool));

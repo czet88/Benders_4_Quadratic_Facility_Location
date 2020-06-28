@@ -261,3 +261,7 @@ void Benders_BC(void);
  int Breakpoint_O_D;
  int* index_hub_oi;
  int* index_hub_dj;
+
+ //Additional times
+ double cpuFacLocIni; //CPU time of the initial linear facility location problem solved to get an initial feasible solution.
+ double cpuGenAss; //CPU time of the Generalized assignment problem.
