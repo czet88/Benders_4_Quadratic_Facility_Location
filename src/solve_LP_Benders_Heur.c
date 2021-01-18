@@ -120,8 +120,8 @@ void Benders_root_node_heur(void)
 	count_added = 0;
 	//tolerance_sep = -0.0001;
 	tolerance_sep = 0.50;
-	//epsilon_LP = 0.005;
-	epsilon_LP = 0.0000005;
+	epsilon_LP = 0.005;
+	//epsilon_LP = 0.0000005;
 	tol_sep_cover = 0.001;
 	cputime_SP = 0;
 	total_assign_fixed = 0;
