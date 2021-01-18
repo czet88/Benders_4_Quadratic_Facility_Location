@@ -120,7 +120,8 @@ void Benders_root_node_heur(void)
 	count_added = 0;
 	//tolerance_sep = -0.0001;
 	tolerance_sep = 0.50;
-	epsilon_LP = 0.005;
+	//epsilon_LP = 0.005;
+	epsilon_LP = 0.0000005;
 	tol_sep_cover = 0.001;
 	cputime_SP = 0;
 	total_assign_fixed = 0;
@@ -382,12 +383,15 @@ void Benders_root_node_heur(void)
 	status = CPXlpopt(env, lp);
 	if (status) fprintf(stderr, "Failed to optimize LP.\n");
 	CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+	printf("Initial LP bound: %.2lf\n", value);
 	PopulateLPSupport(x);
 
 	//Run heuristc using info from fractional solution x
-	printf("Started solving heuristic\n");
-	status = Construct_Feasible_Solution(x, dj);
-	printf("Finished solving heuristic.\n");
+	if (FlagHeuristic) {
+		printf("Started solving heuristic\n");
+		status = Construct_Feasible_Solution(x, dj);
+		printf("Finished solving heuristic.\n");
+	}
 
 	//Cutting plane algorithm for solving the root node
 	do {
@@ -607,7 +611,7 @@ void Benders_root_node_heur(void)
 		
 		//printf("Finished separating more optimality cuts took %lf secs\n",(double)(end_SP - start_SP) / CLOCKS_PER_SEC);
 		cputime = (double)(end - start) / CLOCKS_PER_SEC;
-		printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
+		//printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
 		if ((-lhs / value) * 100 < tolerance_sep && ((UpperBound - value) / UpperBound) * 100 < 10.0) {
 			flag_added = 0;
 		}
@@ -633,11 +637,15 @@ void Benders_root_node_heur(void)
 		status = CPXlpopt(env, lp);
 		if (status) fprintf(stderr, "Failed to optimize LP.\n");
 		CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
-		if (CompareLPSupport(x) >= 2) {
-			printf("Started running Matheuristic\n");
-			status = Construct_Feasible_Solution(x, dj);	
-			PopulateLPSupport(NULL);
-			printf("Finished running Matheuristic\n");
+		printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
+
+		if (FlagHeuristic) {
+			if (CompareLPSupport(x) >= 2) {
+				printf("Started running Matheuristic\n");
+				status = Construct_Feasible_Solution(x, dj);
+				PopulateLPSupport(NULL);
+				printf("Finished running Matheuristic\n");
+			}
 		}
 
 		//Should there be a second round or not?

@@ -191,6 +191,7 @@ int CPXPUBLIC Heur(CPXCENVptr env, void *cbdata, int wherefrom,  void *cbhandle,
 void Update_CP_MW(double *z_sol,int i, int j);
 
 void  free_and_null (char **ptr);
+void read_heur_cl_param(const char*);
 
 
 int Comparevalue_ord(const void *, const void *);
@@ -265,3 +266,9 @@ void Benders_BC(void);
  //Additional times
  double cpuFacLocIni; //CPU time of the initial linear facility location problem solved to get an initial feasible solution.
  double cpuGenAss; //CPU time of the Generalized assignment problem.
+
+ //Flags for the heuristic parameters
+ int FlagHeuristic;
+ int FlagLocalSearch;
+ int FlagIteratedLocalSearch;
+ 

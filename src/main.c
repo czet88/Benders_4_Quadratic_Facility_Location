@@ -56,6 +56,7 @@ int main (int argc, char *argv[])
  int i, num_inst, count_opt, pp;
  FILE *ini;
  FILE     *out;
+ 
  clock_t  start, end;
  char instance[10];
  double act_gap, cputime_heur, cputime;
@@ -63,18 +64,27 @@ int main (int argc, char *argv[])
  double coll, trans, distr;
  double UB_heur;
 
-   coll = 0;
-   trans = 0;
-   distr = 0;
-   combtol=0;
+ coll = 0;
+ trans = 0;
+ distr = 0;
+ combtol = 0;
+ //Default heuristic solution
+ FlagHeuristic = 1;
+ FlagLocalSearch = 1;
+ FlagIteratedLocalSearch = 1;
 
- if(argc==1) {
+ if(argc<=1) {
   printf("Error: Input file not specified \n");
   exit(8);
  }
 
  count_opt=0;
  old_objval = 0;
+
+ // If we're given a heuristic parameter file, then read it
+ if(argc ==3) read_heur_cl_param(argv[2]);
+ //printf("FlagHeur %d,\nFlagLS %d,\nFlagILS %d", FlagHeuristic, FlagLocalSearch, FlagIteratedLocalSearch);
+
  ini=open_file (argv[1],"r");
  //ini=open_file ("25ll.txt","r");
  fscanf(ini,"%d",&num_inst);
@@ -85,7 +95,7 @@ int main (int argc, char *argv[])
  t = time(NULL);
  tm = localtime(&t);
  out = open_file(output_text, "a+");
- fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n", asctime(tm));
+ fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n", asctime(tm));
  fclose(out);
  for(i=0; i<num_inst; i++) {
 	 use_firstsolution=1;
@@ -106,8 +116,9 @@ int main (int argc, char *argv[])
 	// if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
 	// end = clock();
 	// cputime_heur = (double)(end - start) / CLOCKS_PER_SEC;
+	 int totalFlag = FlagHeuristic + FlagLocalSearch + FlagIteratedLocalSearch;
 	 out = open_file(output_text, "a+");
-	 fprintf(out, "%d;%s;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid);
+	 fprintf(out, "%d;%s;%d;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid, totalFlag);
 	 fclose(out);
 	 //Solve root node
 	 Benders_root_node_heur();
@@ -129,6 +140,30 @@ int main (int argc, char *argv[])
  fclose(ini);
  
  return 0;
+}
+
+void read_heur_cl_param(const char* name) {
+	/* Modify global parameters */
+	if (strcmp(name, "NoHeur") == 0) {
+		FlagHeuristic = 0;
+		FlagLocalSearch = 0;
+		FlagIteratedLocalSearch = 0;
+	}
+
+	if (strcmp(name, "Heur") == 0) {
+		FlagLocalSearch = 0;
+		FlagIteratedLocalSearch = 0;
+	}
+
+	if (strcmp(name, "LS") == 0) {
+		FlagIteratedLocalSearch = 0;
+	}
+
+	if (strcmp(name, "ILS") == 0) {
+		FlagHeuristic = 1;
+		FlagLocalSearch = 1;
+		FlagIteratedLocalSearch = 1;
+	}
 }
 
 
