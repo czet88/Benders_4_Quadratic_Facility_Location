@@ -83,7 +83,8 @@
 		 exit(8);
 	 }
 	 //read output file name
-	 sprintf(output_text, argv[2]);
+	 sprintf(output_text, "Results/");
+	 strcat(output_text, argv[2]);
 
 	 // If we're given a heuristic parameter file, then read it
 	 if (argc >= 4) read_heur_cl_param(argv[3]);
@@ -99,7 +100,7 @@
 	 t = time(NULL);
 	 tm = localtime(&t);
 	 out = open_file(output_text, "a+");
-	 fprintf(out, "\n %s\nVers;instance;APset;Cap;p;hybrid;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n", asctime(tm));
+	 fprintf(out, "Vers;instance;APset;Cap;p;hybrid;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n");
 	 fclose(out);
 	 for (i = 0; i < num_inst; i++) {
 		 use_firstsolution = 1;

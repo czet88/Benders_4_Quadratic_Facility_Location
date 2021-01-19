@@ -229,7 +229,7 @@ void Benders_BC(void);
  int	use_firstsolution;
  double Prev_incumbent;
  int        *best_assigmnent;
- char output_text[20];
+ char output_text[40];
  Solpool *prevsols; //pool of previous solutions
  int countsols; //coutner of how many solutions we have so far.
  double combtol; //combinatorial cut tolerance.
