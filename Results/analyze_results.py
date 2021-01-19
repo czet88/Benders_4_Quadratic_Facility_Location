@@ -8,11 +8,14 @@ from glob import glob
 def create_latex_table(df, col_list=None):
     # Function that reads the dataframe and a list of ordered columns
     # to be included and outputs the string to be pasted in a latex document
-    if col_list:
-        cols = col_list
+    if not df.empty:
+        if col_list:
+            cols = col_list
+        else:
+            cols = df.columns.tolist()
+        out_string = df[cols].to_latex(index=False)
     else:
-        cols = df.columns.tolist()
-    out_string = df[cols].to_latex(index=False)
+        out_string = "Empty dataframe"
     return out_string
 
 
@@ -47,10 +50,26 @@ def main():
     # Create one concatenated dataframe for all tables read
     df_full = from_csvs_to_dataframe(file_prefix)
 
+    # List of conditional statements
+    uncap_cond = df_full['Cap'] == 0
+    cap_cond = df_full['Cap'] == 1
+    fix_charge_cond = df_full['hybrid'] == 1
+    p_med_cond = df_full['hybrid'] == 0
+
+    # Uncapacitated dataframes
+    df_uncap_fix_charge = df_full[uncap_cond & fix_charge_cond]
+    df_uncap_p_med = df_full[uncap_cond & p_med_cond]
+
+    # Capacitated dataframes
+    df_cap_fix_charge = df_full[cap_cond & fix_charge_cond]
+    df_cap_p_med = df_full[cap_cond & p_med_cond]
+
     # Create the Latex tables
     with open(outfile_name, "w") as text_file:
-        print(f"{create_latex_table(df_full, ['Vers', 'instance'])}", file=text_file)
-        print(f"{create_latex_table(df_full, ['Vers', 'instance'])}", file=text_file)
+        print(f"{create_latex_table(df_uncap_fix_charge, ['Vers', 'instance'])}", file=text_file)
+        print(f"{create_latex_table(df_uncap_p_med, ['Vers', 'instance'])}", file=text_file)
+        print(f"{create_latex_table(df_cap_fix_charge, ['Vers', 'instance'])}", file=text_file)
+        print(f"{create_latex_table(df_cap_p_med, ['Vers', 'instance'])}", file=text_file)
 
 
 if __name__ == "__main__":
