@@ -86,7 +86,7 @@ def add_report_table(df_dict, report_vals, index_vals, col_vals):
             index_app = []
         index_use = index_vals + index_app
         df_rep = pd.pivot_table(df_dict[ele][0], values=report_vals, index=index_use, columns=col_vals, aggfunc=np.mean,
-                                margins=True, margins_name='Test bed average').round(2)
+                                margins=True, margins_name='Testbed average').round(2)
         df_rep = df_rep.iloc[:, :-1]
         df_dict[ele].append(df_rep)
     return df_dict
