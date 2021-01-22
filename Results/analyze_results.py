@@ -60,6 +60,8 @@ def split_dataframe_by_case(df_full):
     fix_charge_cond = df_full['hybrid'] == 1
     p_med_cond = df_full['hybrid'] == 0
 
+    df_dict = {}
+
     # Uncapacitated dataframes
     df_uncap_fix_charge = df_full[uncap_cond & fix_charge_cond]
     df_uncap_p_med = df_full[uncap_cond & p_med_cond]
@@ -68,11 +70,15 @@ def split_dataframe_by_case(df_full):
     df_cap_fix_charge = df_full[cap_cond & fix_charge_cond]
     df_cap_p_med = df_full[cap_cond & p_med_cond]
 
-    # Create a dictionary for each of the cases
-    df_dict = {"uncap_fixed_cost": [df_uncap_fix_charge, "Results for the uncapacitated fixed charge problems"],
-               "cap_fixed_cost": [df_cap_fix_charge, "Results for the capacitated fixed charge problems"],
-               "uncap_p_med": [df_uncap_p_med, "Results for the uncapacitated p-median problems"],
-               "cap_p_med": [df_cap_p_med, "Results for the capacitated p-median problems"]}
+    # Add to the dictionary only if it is not empty
+    if not df_uncap_fix_charge.empty:
+        df_dict["uncap_fixed_cost"] = [df_uncap_fix_charge, "Results for the uncapacitated fixed charge problems"]
+    if not df_uncap_p_med.empty:
+        df_dict["uncap_p_med"] = [df_uncap_p_med, "Results for the uncapacitated p-median problems"]
+    if not df_cap_fix_charge.empty:
+        df_dict["cap_fixed_cost"] = [df_cap_fix_charge, "Results for the capacitated fixed charge problems"]
+    if not df_cap_p_med.empty:
+        df_dict["cap_p_med"] = [df_cap_p_med, "Results for the capacitated p-median problems"]
 
     return df_dict
 
@@ -124,7 +130,7 @@ def main():
     df_dict = split_dataframe_by_case(df_full)
 
     # Define the columns, indices and values to be reported from the dataframes in the dictionaries
-    report_vals = ['CPU_all']
+    report_vals = ['CPU_Pre', 'CPU_all']
     index_vals = ['Instance']
     col_vals = ['Heur_used']
 
