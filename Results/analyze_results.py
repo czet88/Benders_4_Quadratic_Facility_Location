@@ -93,7 +93,8 @@ def add_report_table(df_dict, report_vals, index_vals, col_vals):
         index_use = index_vals + index_app
         df_rep = pd.pivot_table(df_dict[ele][0], values=report_vals, index=index_use, columns=col_vals, aggfunc=np.mean,
                                 margins=True, margins_name='Testbed average').round(2)
-        df_rep = df_rep.iloc[:, :-1]
+        # df_rep = df_rep.iloc[:, :-1]
+        df_rep = df_rep.drop('Testbed average', axis=1, level=1)
         df_dict[ele].append(df_rep)
     return df_dict
 
@@ -130,7 +131,7 @@ def main():
     df_dict = split_dataframe_by_case(df_full)
 
     # Define the columns, indices and values to be reported from the dataframes in the dictionaries
-    report_vals = ['CPU_Pre', 'CPU_all']
+    report_vals = ['CPU_all', 'GAP']
     index_vals = ['Instance']
     col_vals = ['Heur_used']
 
