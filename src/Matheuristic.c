@@ -1500,3 +1500,43 @@ TERMINATE:
 	//free(x);
 	return statusP;
 }
+
+double sum2_F_ijkm(int i, int j, int k, int m, int* assignment) {
+
+	int t;
+	double suma = 0;
+
+	for (t = 0; t < NN; t++) {
+		if (i != t && j != t)
+			suma += W[i][t] * (c_c[i][k] + c_t[k][assignment[t]] + c_d[assignment[t]][t]) + W[t][i] * (c_c[t][assignment[t]] + c_t[assignment[t]][k] + c_d[k][i]);
+		else {
+			if (i == t)
+				suma += W[i][t] * (c_c[i][k] + c_t[k][k] + c_d[k][t]);
+		}
+		if (j != t && i != t)
+			suma += W[j][t] * (c_c[j][m] + c_t[m][assignment[t]] + c_d[assignment[t]][t]) + W[t][j] * (c_c[t][assignment[t]] + c_t[assignment[t]][m] + c_d[m][j]);
+		else {
+			if (j == t)
+				suma += W[j][t] * (c_c[j][m] + c_t[m][m] + c_d[m][t]);
+		}
+	}
+	suma += W[i][j] * (c_c[i][k] + c_t[k][m] + c_d[m][j]) + W[j][i] * (c_c[j][m] + c_t[m][k] + c_d[k][i]);
+
+	return suma;
+}
+
+
+double sum_F_ijkm(int i, int k, int* assignment) {
+
+	int j;
+	double suma = 0;
+
+	for (j = 0; j < NN; j++) {
+		if (i != j)
+			suma += W[i][j] * (c_c[i][k] + c_t[k][assignment[j]] + c_d[assignment[j]][j]) + W[j][i] * (c_c[j][assignment[j]] + c_t[assignment[j]][k] + c_d[k][i]);
+		else
+			suma += W[i][j] * (c_c[i][k] + c_t[k][k] + c_d[k][j]);
+	}
+
+	return suma;
+}
