@@ -17,7 +17,7 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
   double *OD;
   double *dc;
   char path [100];
-  //APset = 1;   //If we solve AP instances APset=1 and APset = 0 when solving SetI, II, and II instances
+
   Q = 1;       // Number of capacity levels
   //Capacitated_instances = 0;  //Capcitated == 1,  uncapacitated == 0
   sprintf(path,"Data/");
@@ -438,3 +438,11 @@ if((*vector=(char *)calloc(n,sizeof(char)))==NULL)
   printf("Error \n");
 return;
 }
+
+void free_and_null(char** ptr)
+{
+	if (*ptr != NULL) {
+		free(*ptr);
+		*ptr = NULL;
+	}
+} /* END free_and_null */

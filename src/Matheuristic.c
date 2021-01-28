@@ -1356,3 +1356,29 @@ double sum_F_ijkm(int i, int k, int* assignment) {
 	}
 	return suma;
 }
+
+void PopulateLPSupport(double* x) {
+	int k;
+	double val;
+	for (k = 0; k < NN; k++) {
+		if (x == NULL) val = best_sol_facilities[k];
+		else val = x[pos_z[k][k]];
+		if (val > 0.001) {
+			FlagHubLPsupport[k] = 1;
+			//printf("Found one\n");
+		}
+		else {
+			FlagHubLPsupport[k] = 0;
+		}
+	}
+}
+
+int CompareLPSupport(double* x) {
+	int k, retval = 0;
+	for (k = 0; k < NN; k++) {
+		if ((x[pos_z[k][k]] < 0.001 && FlagHubLPsupport[k] == 1)) {
+			retval++;
+		}
+	}
+	return retval;
+}

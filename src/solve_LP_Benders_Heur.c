@@ -846,32 +846,6 @@ TERMINATE:
 	//free(fixed_zero);
 }
 
-void PopulateLPSupport(double* x) {
-	int k;
-	double val;
-	for (k = 0; k < NN; k++) {
-		if (x == NULL) val = best_sol_facilities[k];
-		else val = x[pos_z[k][k]];
-		if ( val > 0.001) {
-			FlagHubLPsupport[k] = 1;
-			//printf("Found one\n");
-		}
-		else {
-			FlagHubLPsupport[k] = 0;
-		}
-	}
-}
-
-int CompareLPSupport(double* x) {
-	int k, retval=0;
-	for (k = 0; k < NN; k++) {
-		if ((x[pos_z[k][k]] < 0.001 && FlagHubLPsupport[k] == 1)) {
-			retval++;
-		}
-	}
-	return retval;
-}
-
 int Comparevalue_zo(const void* a, const void* b)
 {
 	if (((ZVAL*)a)->value < ((ZVAL*)b)->value)
@@ -1121,14 +1095,6 @@ int CPXPUBLIC mycutcallback(CPXCENVptr env, void* cbdata, int wherefrom, void* c
 TERMINATE:
 	return (status);
 } /* END mycutcallback */
-
-void free_and_null(char** ptr)
-{
-	if (*ptr != NULL) {
-		free(*ptr);
-		*ptr = NULL;
-	}
-} /* END free_and_null */
 
 int NetFlow_TP(double* sol_z, int Origin_Node, int Destin_Node)
 {
