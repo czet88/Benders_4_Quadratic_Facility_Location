@@ -128,19 +128,22 @@ void Benders_root_node_heur(void)
 			exit(1);
 		}
 	}
+	
 	//CPXwriteprob(env, lp, "BendersCHLPSA_LP.lp", NULL);
 	//CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_OFF); //output display
 	//CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,3); //different levels of output display
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
-   // CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
-	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
+    //CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
 	//CPXsetintparam(env,CPX_PARAM_NUMERICALEMPHASIS,1); //Numerical precision of the time
 	//CPXsetdblparam(env,CPX_PARAM_EPRHS, 0.0000001);
-	CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
 	//CPXsetintparam(env,CPX_PARAM_REDUCE, 0);  // only needed when adding lazy constraints
 	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
 	//CPXsetintparam(env,CPX_PARAM_PREIND,0);
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
 	CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);
+	
+	
 	cur_rows = CPXgetnumrows(env, lp);
 	cur_numcols = CPXgetnumcols(env, lp);
 	dj = create_double_vector(cur_numcols);
@@ -542,7 +545,7 @@ void Benders_root_node_heur(void)
 	free(sense);
 	free(rhs);
 	//Now solving the Integer Program
-	 /******************************************************************************************/
+	/******************************************************************************************/
 	SetBranchandCutParam(env, lp);
 	if (vers != 2) CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
 	status = CPXcopyorder(env, lp, NN*NN, indices, priority, NULL);
@@ -667,17 +670,14 @@ TERMINATE:
 	}
 	free(x);
 	free(dj);
+	free(cand_cover);
 	free(z_open);
 	free(z_closed);
-	free(cand_cover);
 	free(coeff_ES);
 	free(globvarctype);
 	free(globvarind);
 	free(indices);
 	free(priority);
-	//free(cand_hubs);
-	//free(fixed_one);
-	//free(fixed_zero);
 }
 
 int Comparevalue_zo(const void* a, const void* b)
