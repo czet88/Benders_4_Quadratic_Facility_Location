@@ -192,10 +192,6 @@ void Update_CP_MW(double *z_sol,int i, int j);
 
 void  free_and_null (char **ptr);
 void read_heur_cl_param(const char*);
-
-
-int Comparevalue_ord(const void *, const void *);
-void Benders_BC(void);
  void i_vector(int **vector,int n,char *s);
  void d_vector(double **vector,int n,char *s);
  void c_vector(char **vector,int n,char *s);

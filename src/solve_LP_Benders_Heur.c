@@ -964,7 +964,6 @@ TERMINATE:
 	//free(fixed_zero);
 }
 
-
 void PopulateLPSupport(double* x) {
 	int k;
 	double val;
@@ -992,4 +991,22 @@ int CompareLPSupport(double* x) {
 	}
 
 	return retval;
+}
+
+int Comparevalue_zo(const void* a, const void* b)
+{
+	if (((ZVAL*)a)->value < ((ZVAL*)b)->value)
+		return 1;
+	if (((ZVAL*)a)->value > ((ZVAL*)b)->value)
+		return -1;
+	return 0;
+}
+
+int Comparevalue_zc(const void* a, const void* b)
+{
+	if (((ZVAL*)a)->value < ((ZVAL*)b)->value)
+		return 1;
+	if (((ZVAL*)a)->value > ((ZVAL*)b)->value)
+		return -1;
+	return 0;
 }

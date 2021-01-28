@@ -364,7 +364,6 @@ int clients_swap_red(int *assignment, int *current_open_plants, double *current_
 	return 0;
 }
 
-
 int clients_shift_red(int *assignment, int *current_open_plants, double *current_capacity, double *vs) {
 
 	register i, k;
@@ -409,7 +408,6 @@ int clients_shift_red(int *assignment, int *current_open_plants, double *current
 	}
 	return 0;
 }
-
 
 int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_plants)
 {
@@ -771,8 +769,6 @@ TERMINATE:
 	return status;
 }
 
-
-
 int open_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
 {
 	int i, j, k, m;
@@ -833,8 +829,6 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 	return 0;
 
 }
-
-
 
 int close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
 {
@@ -916,7 +910,6 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 	return 0;
 
 }
-
 
 int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
 {
@@ -1010,7 +1003,6 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 	return 0;
 
 }
-
 
 int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 {

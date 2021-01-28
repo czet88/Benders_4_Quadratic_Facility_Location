@@ -127,8 +127,6 @@
 		 fclose(out);
 		 //Solve root node
 		 Benders_root_node_heur();
-		 //Benders_root_node();
-		 //Benders_BC();							//Solve Benders reformulation with branch and cut algorithm
 		 end = clock();
 		 cputime = (double)(end - start) / CLOCKS_PER_SEC;
 		 printf("\nFInal CPU time: %.2lf\n", cputime);
