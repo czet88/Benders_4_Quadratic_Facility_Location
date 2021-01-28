@@ -223,7 +223,7 @@ void initialize_memory(void) {
   f = create_double_matrix(NN, Q);
   W = create_double_matrix(NN,NN);
   pts = (coordinate *)malloc((NN)*sizeof(coordinate));
-  pos_z = create_int_matrix(NN,NN);
+  
   //pos_eta = create_int_vector(NN);
   core = create_double_matrix(NN,NN);
   O = create_double_vector(NN);
@@ -446,3 +446,37 @@ void free_and_null(char** ptr)
 		*ptr = NULL;
 	}
 } /* END free_and_null */
+
+char** create_stringarray(int n, int m) {
+	char** ptr;
+	int i;
+	ptr = (char**)calloc(n, sizeof(char*));
+	for (i = 0; i < n; i++) {
+		ptr[i] = (char*)calloc(m, sizeof(char));
+	}
+	return ptr;
+}
+
+void free_stringarray(char*** ptr, int n) {
+	int i;
+	if (**ptr == NULL) {
+		fprintf(stderr, "ERROR: Unable to free memory from INSTANCE_vector\n");
+	}
+	else {
+		for (i = 0; i < n; i++) {
+			free_char_vector(&(*ptr)[i]);
+		}
+		free(*ptr);
+		*ptr = NULL;
+	}
+}
+
+void free_char_vector(char** ptr) {
+	if (*ptr == NULL) {
+		fprintf(stderr, "ERROR: Unable to free memory from char_vector\n");
+	}
+	else {
+		free(*ptr);
+		*ptr = NULL;
+	}
+}

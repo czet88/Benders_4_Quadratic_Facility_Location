@@ -123,6 +123,9 @@ typedef struct Solpool{
 	int * indhub;
 	int num_comb;
 }Solpool;
+char** create_stringarray(int n, int m);
+void	free_stringarray(char*** ptr, int n);
+void	free_char_vector(char** ptr);
 
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	
@@ -236,6 +239,8 @@ void read_heur_cl_param(const char*);
  double     UpperBound;
  coordinate* pts;
  int** pos_z;
+ int *priority;
+ int* indices;
  int        pos_eta;
  double     old_lower_bound;
  double*** alpha;

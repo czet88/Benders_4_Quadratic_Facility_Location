@@ -46,7 +46,6 @@ void Benders_root_node_heur(void)
 	int count_cover_cuts = 0;
 	int count_Fenchel_cuts = 0;
 	int assign_fixed, total_assign_fixed;
-	int* indices, * priority;
 	int *beg, *varindices, *effortlevel;
 	double  *values;
 	CUTINFO cutinfo;
@@ -64,12 +63,7 @@ void Benders_root_node_heur(void)
 	d_vector(&realub, 1, "open_cplex:3");
 	realub[0] = 0;
 	btype[0] = 'U';
-	priority = create_int_vector(NN * NN);
-	indices = create_int_vector(NN * NN);
-	//Declaring the global types
-	glob_numcols = NN * NN + 1;
-	globvarind = create_int_vector(glob_numcols);  //Array containing all the Types for the complete model
-	c_vector(&globvarctype, glob_numcols, "open_cplex:01");
+	
 	/*******************************/
 	cand_cover = create_int_vector(NN);
 	coeff_ES = create_double_vector(NN);
@@ -123,59 +117,9 @@ void Benders_root_node_heur(void)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-	//Define z_ik variables
-	index1 = 0;  // index of columns
-	numcols = NN * NN;
-	d_vector(&obj, numcols, "open_cplex:1");
-	d_vector(&lb, numcols, "open_cplex:8");
-	d_vector(&ub, numcols, "open_cplex:9");
-	for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			pos_z[i][k] = index1;
-			if (i == k) {
-				obj[index1] = f[i][0];
-				priority[index1] = 2;
-			}
-			else {
-				obj[index1] = (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
-				priority[index1] = 1;
-			}
-			if (initial_x[index1] == 1)
-				eta_cost += obj[index1];
-			lb[index1] = 0;
-			ub[index1] = 1;
-			indices[index1] = index1;
-			globvarind[index1] = index1;
-			globvarctype[index1] = 'B';
-			index1++;
-		}
-	}
-	status = CPXnewcols(env, lp, index1, obj, lb, ub, NULL, NULL);
-	if (status)
-		fprintf(stderr, "CPXnewcols failed.\n");
-	free(obj);
-	free(lb);
-	free(ub);
-	//The type of the continuous variable
-	globvarind[index1] = index1;
-	globvarctype[index1++] = 'C';
-	//Define eta variable
-	index1 = 0;  // index of columns
-	numcols = 1;
-	d_vector(&obj, numcols, "open_cplex:1");
-	d_vector(&lb, numcols, "open_cplex:8");
-	d_vector(&ub, numcols, "open_cplex:9");
-	pos_eta = NN * NN + index1;
-	obj[index1] = 1;
-	lb[index1] = 0;
-	ub[index1] = CPX_INFBOUND;
-	index1++;
-	status = CPXnewcols(env, lp, index1, obj, lb, ub, NULL, NULL);
-	if (status)
-		fprintf(stderr, "CPXnewcols failed.\n");
-	free(obj);
-	free(lb);
-	free(ub);
+	
+	//Add the variables with their respective positions
+	glob_numcols = add_variables(env, lp);
 	//Add assignment constraints  \sum_{k \in N} z_ik = 1
 	numrows = NN;
 	numnz = NN * NN;
@@ -760,7 +704,7 @@ void Benders_root_node_heur(void)
 	values[cur_numcols - 1] = (double) (UpperBound - eta_cost);
 	//values[cur_numcols - 1] = UpperBound;
 	varindices[cur_numcols - 1] = cur_numcols - 1;
-	printf("glonumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN*NN, UpperBound, eta_cost);
+	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN*NN, UpperBound, eta_cost);
 	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
 	printf("status: %d \n", status);
 	free(beg);
