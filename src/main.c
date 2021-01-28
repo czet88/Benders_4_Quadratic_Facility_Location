@@ -1,5 +1,4 @@
 #include "def.h"
-
  double     **c, **c_c, **c_t, **c_d, **f, **W, *O, *D, **b;
  double     collect,transfer,distribute, AD;
  int        NN, Q, p_hubs;
@@ -45,18 +44,14 @@
  ORD        *ord_O;
  ORD        *ord_D;
  double     sum_supply_i, sum_supply_j;
- 
- 
-
  double     old_objval = 0;
  int        count_same_node = 0;
 
- int main(int argc, char* argv[])
+int main(int argc, char* argv[])
  {
 	 int i, num_inst, count_opt, pp;
 	 FILE* ini;
 	 FILE* out;
-
 	 clock_t  start, end;
 	 char instance[10];
 	 double act_gap, cputime_heur, cputime;
@@ -64,19 +59,16 @@
 	 double coll, trans, distr;
 	 double UB_heur;
 	 char fake_text[20];
-
 	 coll = 0;
 	 trans = 0;
 	 distr = 0;
 	 combtol = 0;
 	 count_opt = 0;
 	 old_objval = 0;
-
 	 //Default heuristic solution parameters
 	 FlagHeuristic = 1;
 	 FlagLocalSearch = 1;
 	 FlagIteratedLocalSearch = 1;
-
 	 //Read command line arguments
 	 if (argc < 3) {
 		 printf("Error: Input file and output file not specified \n");
@@ -85,16 +77,13 @@
 	 //read output file name
 	 sprintf(output_text, "Results/");
 	 strcat(output_text, argv[2]);
-
 	 // If we're given a heuristic parameter file, then read it
 	 if (argc >= 4) read_heur_cl_param(argv[3]);
 	 printf("FlagHeur %d,\nFlagLS %d,\nFlagILS %d\n", FlagHeuristic, FlagLocalSearch, FlagIteratedLocalSearch);
-
 	 ini = open_file(argv[1], "r");
 	 //ini=open_file ("25ll.txt","r");
 	 fscanf(ini, "%d", &num_inst);
 	 fscanf(ini, "%s", &fake_text);
-
 	 /*Printing the time and date these are being executed*/
 	 /************************************************/
 	 t = time(NULL);
@@ -134,14 +123,12 @@
 		 fprintf(out, "%.2f; %d; %.2lf; %.2lf\n", cputime, missed, cpuFacLocIni, cpuGenAss);
 		 fclose(out);
 		 //CHLPSA_model();
-
 		 //Original_Model();  //Solve four-index formulation directly with CPLEX
 		 free_memory();
 		 printf("Finished solving\n");
 		 //getchar();
 	 }
 	 fclose(ini);
-
 	 return 0;
  }
 
@@ -152,21 +139,16 @@ void read_heur_cl_param(const char* name) {
 		FlagLocalSearch = 0;
 		FlagIteratedLocalSearch = 0;
 	}
-
 	if (strcmp(name, "Heur") == 0) {
 		FlagLocalSearch = 0;
 		FlagIteratedLocalSearch = 0;
 	}
-
 	if (strcmp(name, "LS") == 0) {
 		FlagIteratedLocalSearch = 0;
 	}
-
 	if (strcmp(name, "ILS") == 0) {
 		FlagHeuristic = 1;
 		FlagLocalSearch = 1;
 		FlagIteratedLocalSearch = 1;
 	}
 }
-
-

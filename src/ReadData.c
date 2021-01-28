@@ -1,5 +1,4 @@
 #include "def.h"
-
 extern double     **c, **c_c, **c_t, **c_d, **f, **W, *O, *D, **b;
 extern double     collect,transfer,distribute, AD;
 extern int        NN, Q;
@@ -33,7 +32,6 @@ extern ORD        *ord_D;
 extern int        *best_sol_facilities;
 extern int        *best_sol_assignments;
 //extern int Capacitated_instances;
-
 void read_instance (const char *name, int trans_fact, double coll, double trans, double distr, int APset)
 {
   int i,j,p,k,e, ee, value,s, incl, q, fake;
@@ -51,23 +49,16 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
   double *OD;
   double *dc;
   char path [100];
-
-
   //APset = 1;   //If we solve AP instances APset=1 and APset = 0 when solving SetI, II, and II instances
   Q = 1;       // Number of capacity levels
   //Capacitated_instances = 0;  //Capcitated == 1,  uncapacitated == 0
-
   sprintf(path,"Data/");
   strcat(path,name);
-
   in=open_file (path,"r");
   fscanf(in,"%d",&NN);
-
   initialize_memory();
-
   OD = (double *)calloc(NN, sizeof(double));
   dc = (double *)calloc(NN, sizeof(double));
-
   for(p=0;p<NN;p++){
     if(fscanf(in,"%lf %lf",&pts[p].x,&pts[p].y) != 2){
       fprintf(stderr,"ERROR: Can't read coordinates\n");
@@ -93,7 +84,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
   /*collect = 3.0;
   transfer = 0.75;
   distribute = 2.0;*/
-
   for(j=0;j<NN;j++) {
     for(i=0;i<NN;i++){
       c[i][j] = trans_fact*(sqrt(pow((pts[i].x-pts[j].x),2)+pow((pts[i].y-pts[j].y),2)))/1000;
@@ -103,7 +93,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
       //W[i][j] *= 0.1;
     }
   }
-
   AggregatedDemand = 0;
   menor_O = MAX_DOUBLE;
   for (i = 0; i<NN; i++) {
@@ -118,9 +107,7 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 	  AggregatedDemand += O[i];
 	 // printf("O[%d]= %.2f D[%d}= %.2f \n", i+1, O[i], i+1, D[i]);
   }
-
   Ordenar_costos();
-
   if (APset == 1){
 	  for (i = 0; i<NN; i++){
 		  if (fscanf(in, "%lf", &f[i][0]) != 1){
@@ -128,7 +115,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 			  exit(1);
 		  }
 	  }
-
 	  for (i = 0; i<NN; i++){
 		  if (fscanf(in, "%lf", &b[i][0]) != 1){
 			  fprintf(stderr, "ERROR: Can't read capacities\n");
@@ -137,7 +123,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 	  }
   }
   else{
-
 	  for (i = 0; i < NN; i++){
 		  O[i] = 0;
 		  D[i] = 0;
@@ -151,10 +136,8 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 		  ord_D[i].W = D[i];
 		  //printf("O[%d]: %.1f  b[%d]: %1f \n", i+1,O[i],i+1,b[i][0]);
 	  }
-
 	  qsort((ORD *)ord_O, NN, sizeof(ord_O[0]), Compareval);
 	  qsort((ORD *)ord_D, NN, sizeof(ord_D[0]), Compareval);
-
 	  center_x = 0;
 	  center_y = 0;
 	  for (i = 0; i < NN; i++){
@@ -163,7 +146,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 	  }
 	  center_x /= AD;
 	  center_y /= AD;
-
 	  max_dc = 0;
 	  min_dc = MAX_DOUBLE;
 	  min_i = -1;
@@ -177,7 +159,6 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 		  }
 	  }
 	  //New generated fixed costs and capacities
-
 	  pp = 5;
 	  b_max = 0;
 	  for (i = 0; i<NN; i++){
@@ -199,15 +180,12 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 		  //printf("f[%d]= %.2f \n", i+1, f[i][0]);
 		  //f[i][0] = f_0*(5*(b[i][0] + O[i])/(b_max + ord_O[NN-1].W) + 0.5);
 	  }
-
-
 	  for (i = 0; i<NN; i++){
 		  if (fscanf(in, "%lf", &f[i][0]) != 1){
 			  fprintf(stderr, "ERROR: Can't read fixed costs \n");
 			  exit(1);
 		  }
 	  }
-
 	  if (Q > 1){
 		  red_lev = 0.7;
 		  rou = 1.3;
@@ -222,23 +200,18 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 			  }
 		  }
 	  }
-
   }
-
   if(hybrid==0){  //Are we only solving the one without fixed costs
 	  for(i=0;i<NN;i++){
 		  f[i][0]=0;
 	  }
   }
-
   if (Capacitated_instances == 0){
 	  for (i = 0; i < NN; i++)
 		  b[i][0] = AggregatedDemand;
   }
-
   free(OD);
   free(dc);
-
  // for(i=0;i<NN;i++) {
 	//O[i]=0;
 	//D[i]=0;
@@ -248,19 +221,11 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 	//  //AD += W[i][j];
 	//}
  // }
-
-
- 
  // initialize_memory2();
-
-
  fclose(in);
 }
 
-
-
 void initialize_memory(void) {
-
   int i;
   cpuFacLocIni = 0;
   cpuGenAss = 0;
@@ -277,12 +242,10 @@ void initialize_memory(void) {
 	  eli_per_com[i] = NN;
   }
   /*********************************************************/
-  
   best_sol_facilities = create_int_vector(NN);
   best_sol_assignments = create_int_vector(NN);
   ord_O = (ORD *)calloc(NN, sizeof(ORD));
   ord_D = (ORD *)calloc(NN, sizeof(ORD));
-  
   c = create_double_matrix(NN,NN);
   c_c = create_double_matrix(NN,NN);
   c_t = create_double_matrix(NN,NN);
@@ -304,7 +267,6 @@ void initialize_memory(void) {
 	    alpha[i] = create_double_matrix(NN,NN);
         beta[i] = create_double_matrix(NN,NN);
   }
-
   initial_x = create_double_vector(NN*NN);
   best_assigmnent = create_int_vector(NN);
   open_plants = create_int_vector(NN);
@@ -319,11 +281,7 @@ void initialize_memory(void) {
 	  costoso[i].A = (CORD *)calloc(NN, sizeof(CORD));
   cover.z = create_int_vector(NN);
   ord_nodes = (NORD *)calloc(NN, sizeof(NORD));
-
 }
-
-
-
 
 void free_memory(void)
 {
@@ -350,7 +308,6 @@ void free_memory(void)
 	  free(beta[i]);
 	  free(not_eligible_hub[i]);
   }
-
   free(not_eligible_hub);
   free(W);
   free(pts);
@@ -371,7 +328,6 @@ void free_memory(void)
   free(b);
   free(ord_O);
   free(ord_D);
-
   free(initial_x);
   free(best_assigmnent);
   free(allocation);
@@ -381,22 +337,15 @@ void free_memory(void)
   free(avail_capacity);
   for (i = 0; i<NN; i++)
 	  free(costoso[i].A);
-
   free(cover.z);
   free(prevsols);
-
   free(best_sol_facilities);
   free(best_sol_assignments);
-
 }
-
-
-
 
 void Ordenar_costos(void)
 {
 	int i, j;
-
 	for (i = 0; i<NN; i++) {
 		costoso[i].i = i;
 		for (j = 0; j<NN; j++) {
@@ -405,15 +354,12 @@ void Ordenar_costos(void)
 		}
 		qsort((CORD *)costoso[i].A, NN, sizeof(costoso[i].A[0]), Compararcostos);
 	}
-
 	for (i = 0; i < NN; i++){
 		orden_O[i].hub = i;
 		orden_O[i].cociente = O[i];
 	}
 	qsort((SELEC *)orden_O, NN, sizeof(orden_O[0]), Compararvalor_fb);
-
 }
-
 
 int Compareval(const void *a, const void *b)
 {
@@ -445,7 +391,6 @@ int Compararcostos(const void *a, const void *b)
 FILE *open_file (const char *name, const char *mode)
 {
  FILE *file;
-
  if((file=fopen(name,mode))==NULL) {
     printf("\nError: Failed to open file\n");
     exit(8);
@@ -457,7 +402,6 @@ int **create_int_matrix (int rows, int Columns)
 {
  int i;
  int **ptr;
-
  if((ptr=(int **) calloc (rows, sizeof(int *)) ) == NULL) {
    printf ("\nError: Memoria insuficiente\n");
    exit (8);
@@ -471,7 +415,6 @@ double **create_double_matrix (int rows, int Columns)
 {
  int i;
  double **ptr;
-
  if((ptr=(double **) calloc (rows, sizeof(double *)))==NULL) {
     printf("\nError: Memoria insuficiente\n");
     exit(8);
@@ -482,11 +425,9 @@ double **create_double_matrix (int rows, int Columns)
   return ptr;
 }
 
-
 int *create_int_vector (int dim)
 {
  int *ptr;
-
  if((ptr=(int *) calloc (dim, sizeof(int)))==NULL) {
     printf("\nError: Memoria insuficiente\n");
     exit(8);
@@ -497,15 +438,12 @@ int *create_int_vector (int dim)
 double *create_double_vector (int dim)
 {
  double *ptr;
-
  if((ptr=(double *) calloc (dim, sizeof(double)))==NULL) {
     printf("\nError: Memoria insuficiente\n");
     exit(8);
  }
  return ptr;
 }
-
-
 
 void i_vector(int **vector,int n,char *s)
 {

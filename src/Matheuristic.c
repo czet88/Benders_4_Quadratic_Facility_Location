@@ -1,5 +1,4 @@
 #include "def.h"
-
 extern double     **c, **c_c, **c_t, **c_d, **f, **W, *O, *D, **b;
 extern double     collect,transfer,distribute;
 extern int        NN, Q;
@@ -35,8 +34,6 @@ extern int        *fixed_zero;
 extern int        *best_sol_facilities;
 extern int        *best_sol_assignments;
 extern int* open_plants;
-
-
 int Construct_Feasible_Solution(double *x, double *dj)
 {
 	int i, k, m, r, rr, count_c, status, num_modify, target_open_facilties, min_range;
@@ -49,7 +46,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	int *initial_open_plants;
 	int *which_open_plants;
 	int *modified;
-
 	current_assigmnent = create_int_vector(NN);
 	current_open_plants = create_int_vector(NN);
 	current_capacity = create_double_vector(NN);
@@ -57,12 +53,10 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	which_open_plants = create_int_vector(NN);
 	modified = create_int_vector(NN);
 	z_cand = (ZVAL *)calloc(NN, sizeof(ZVAL));
-
 	iter = 0;
 	iter_max = 10;
 	keep_perc_open = 0.2;
 	count_c = 0;
-
 	printf("candidate facilites in support: ");
 	for (k = 0; k < NN; k++) {
 		current_open_plants[k] = 0;
@@ -74,7 +68,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	}
 	printf("\n");
 	//qsort((ZVAL *)z_cand, count_c, sizeof(z_cand[0]), Comparevalue_zc);
-
 	// Obtain initial feasible solution by solving a MILP on the support of the current LP solution of the Benders reformulation
 	status = CFLP_reduced_model(count_c, z_cand, current_assigmnent, current_open_plants);
 	if (status != 0) {
@@ -89,7 +82,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 		memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
 		printf("Initial Upperbound from Matheuristic: %.2f \n", objvalue);
 	}
-
 	if (FlagLocalSearch) {
 		//Disversification-Intensification strategies
 		Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
@@ -109,9 +101,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
 			printf("Improved Upperbound from Local Search: %.2f \n", objvalue);
 		}
-
 		memcpy(initial_open_plants, current_open_plants, NN * sizeof(int));
-
 		if (FlagIteratedLocalSearch) {
 			for (iter = 0; iter < iter_max; iter++) {
 				for (l = 0; l < NN; l++)
@@ -196,7 +186,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 					}
 				}
 				//printf("open: %d p: %d nummodify: %d \n", count_open, p_hubs, num_modify);
-
 				if (AggregatedDemand <= sum_cap) {
 					status = Reassign_nodes_red(current_assigmnent, current_open_plants);
 					if (status == 1) {
@@ -218,14 +207,12 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			}
 		}
 	}
-
 	printf("Matheuristic final UB: %.2f  open facilities: \n", objvalue);
 	for (i = 0; i < NN; i++) {
 		if (current_open_plants[i] == 1)
 			printf("%d ", i + 1);
 	}
 	printf("\n");
-
 	free(z_cand);
 	free(current_assigmnent);
 	free(current_open_plants);
@@ -233,7 +220,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	free(initial_open_plants);
 	free(which_open_plants);
 	free(modified);
-
 	return 1;
 }
 
@@ -251,21 +237,17 @@ double Evaluate_Quadratic_Objective(int *current_open_plants, int *current_assig
 	}
 	for (i = 0; i < NN; i++)
 		current_capacity[current_assigmnent[i]] -= O[i];
-
 	return objvalue;
 }
 
 void Facility_Change_Phase(int *current_assigmnent, int *current_open_plants,  double *current_capacity, ZVAL *z_cand, int count_c, double *objvalue, double *dj){
-
 	int k, flag;
 	double value;
 	value = *objvalue;
-
 	for (k = 0; k < NN; k++)
 		current_capacity[k] = b[k][0];
 	for (k = 0; k < NN; k++)
 		current_capacity[current_assigmnent[k]] -= O[k];
-
 	flag = 1;
 	while (flag) {
 		flag = clients_swap_red(current_assigmnent, current_open_plants, current_capacity, &value);
@@ -281,16 +263,13 @@ void Facility_Change_Phase(int *current_assigmnent, int *current_open_plants,  d
 			}
 		}
 	}
-
 	*objvalue = value;
 }
 
 int Assignment_Change_Phase(int *current_assigmnent, int *current_open_plants, double *current_capacity, ZVAL *z_cand, double *objvalue){
-
 	int i, k, m, status, flag;
 	//double objvalue;
 	double value;
-
 	status = Reassign_nodes_red(current_assigmnent, current_open_plants);
 	if (status == 1){
 		value = 0;
@@ -304,7 +283,6 @@ int Assignment_Change_Phase(int *current_assigmnent, int *current_open_plants, d
 		}
 		for (i = 0; i < NN; i++)
 			current_capacity[current_assigmnent[i]] -= O[i];
-
 		flag = 1;
 		while (flag) {
 			flag = clients_swap_red(current_assigmnent, current_open_plants, current_capacity, &value);
@@ -312,25 +290,20 @@ int Assignment_Change_Phase(int *current_assigmnent, int *current_open_plants, d
 				flag = clients_shift_red(current_assigmnent, current_open_plants, current_capacity, &value);
 			}
 		}
-
-
 		*objvalue = value;
 	}
 	else
 		return 0;
-
 	return 1;
 }
 
 int clients_swap_red(int *assignment, int *current_open_plants, double *current_capacity, double *vs) {
-
 	register i, j;
 	double      MinCostChange = MAX_DOUBLE;
 	double      CanMovCostChange;
 	int      client1, client2;
 	int      plant1, plant2;
 	int      flag = 0;
-
 	for (i = 0; i < NN; i++) {
 		for (j = 0; j < NN; j++) {
 			if (i != j && assignment[i] != assignment[j]) {
@@ -354,7 +327,6 @@ int clients_swap_red(int *assignment, int *current_open_plants, double *current_
 		if (flag == 1)
 			break;
 	}
-
 	if (MinCostChange < 0) {
 		current_capacity[plant1] += O[client1] - O[client2];
 		current_capacity[plant2] += O[client2] - O[client1];
@@ -367,7 +339,6 @@ int clients_swap_red(int *assignment, int *current_open_plants, double *current_
 }
 
 int clients_shift_red(int *assignment, int *current_open_plants, double *current_capacity, double *vs) {
-
 	register i, k;
 	double      MinCostChange = MAX_DOUBLE;
 	double      CanMovCostChange;
@@ -375,7 +346,6 @@ int clients_shift_red(int *assignment, int *current_open_plants, double *current
 	int      plant1, plant2;
 	//int      *open_plants;
 	int      flag = 0;
-
 	for (i = 0; i < NN; i++) {
 		for (k = 0; k < NN; k++) {
 			if (current_open_plants[k] && k != assignment[i]) {
@@ -398,7 +368,6 @@ int clients_shift_red(int *assignment, int *current_open_plants, double *current
 		if (flag == 1)
 			break;
 	}
-
 	if (MinCostChange < 0) {
 		current_capacity[plant1] += O[client];
 		current_capacity[plant2] -= O[client];
@@ -445,13 +414,10 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	int    **pos_z_red;
 	double *sol_x;
 	int    *local_assign; //Contain the local optimal assignment
-
 	pos_z_red = create_int_matrix(NN,count_c);
 	//UpperBound = MAX_DOUBLE;
 	start = clock();
-
 	objsen = 1; //min
-
 	//Initialize CPLEX environment
 	env = CPXopenCPLEX(&status);
 	if (env == NULL) {
@@ -460,7 +426,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
 	// Create the problem in CPLEX 
 	strcpy(probname, "UHLPSA");
 	lp = CPXcreateprob(env, &status, probname);
@@ -470,8 +435,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
-
 	//Define z_ik variables
 	index1 = 0;  // index of columns
 	numcols = count_c * NN;
@@ -479,7 +442,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	d_vector(&lb, numcols, "open_cplex:8");
 	d_vector(&ub, numcols, "open_cplex:9");
 	c_vector(&ctype, numcols, "open_cplex:01");
-
 	for (i = 0; i < NN; i++) {
 		for (k = 0; k < count_c; k++) {
 			pos_z_red[i][k] = index1;
@@ -503,8 +465,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	free(lb);
 	free(ub);
 	free(ctype);
-
-
 	//Add assignment constraints  \sum_{k \in N} z_ik = 1
 	numrows = NN;
 	numnz = count_c * NN;
@@ -513,7 +473,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (i = 0; i < NN; i++) {
@@ -533,10 +492,7 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	free(matval);
 	free(sense);
 	free(rhs);
-
-
 	//Add linking constraints  z_ik <= z_kk
-
 	numrows = count_c * (NN - 1);
 	numnz = 2 * count_c*(NN - 1);
 	d_vector(&rhs, numrows, "open_cplex:2");
@@ -544,7 +500,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (i = 0; i < NN; i++) {
@@ -568,7 +523,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	free(matval);
 	free(sense);
 	free(rhs);
-
 	//Add exactly p_hubs
 	if (hybrid == 0 || hybrid == 3) {
 		numrows = 1;
@@ -596,7 +550,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		free(sense);
 		free(rhs);
 	}
-
 	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
 	if (Capacitated_instances == 1) {
 		numrows = count_c;
@@ -606,7 +559,6 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		i_vector(&matbeg, numrows, "open_cplex:4");
 		i_vector(&matind, numnz, "open_cplex:6");
 		d_vector(&matval, numnz, "open_cplex:7");
-
 		index = 0;
 		index1 = 0;
 		for (k = 0; k < count_c; k++) {
@@ -631,9 +583,7 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		free(sense);
 		free(rhs);
 	}
-
 	//CPXwriteprob(env, lp, "reduced_model.lp", NULL);
-
 	//branch and bound parameters
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF); //output display
 	//CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
@@ -658,35 +608,25 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
 	//	CPXsetintparam(env,CPX_PARAM_PREIND,0);
 	//CPXsetintparam(env,CPX_PARAM_MIPORDIND,CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-
-
-
    /* Assure linear mappings between the presolved and original
 	  models */
 	status = CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);
 	if (status)  goto TERMINATE;
-
 	/* Turn on traditional search for use with control callbacks */
 	status = CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 	if (status)  goto TERMINATE;
-
 	/* Let MIP callbacks work on the original model */
 	status = CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);
 	if (status)  goto TERMINATE;
-
 	/* Set up to use MIP callback */
-
 	//status = CPXsetlazyconstraintcallbackfunc(env, mycheckcallback, NULL);
 	//if (status)  goto TERMINATE;
-
 	i = CPXmipopt(env, lp);  //solve the integer program
-
 	i = CPXgetstat(env, lp);
 	if (i != 101 && i != 102 && i != 107)
 		status = 0;
 	else
 		status = 1;
-
 	/*if (i == 101)
 		printf("Optimal solution found\n");
 	else if (i == 102)
@@ -695,21 +635,14 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		printf("Time limit reached\n");
 	else
 		printf("Unknown stopping criterion (%d)\n", i);*/
-
 	// out = open_file("result_CHLP_3index.txt","a+");
-
-
 	// retrive solution values
 	CPXgetmipobjval(env, lp, &UFLPrelval);
 	//printf("MIP value: %.2f \n", UFLPrelval);
-
-
 	//CPXgetbestobjval(env,lp,&value);  //best lower bound in case thew problem was not solve to optimality
-
 	end = clock();
 	cpuFacLocIni += (double)(end - start) / CLOCKS_PER_SEC;
 	//printf("Time to solve SSCFLP: %.2f \n", cputime);
-
 	/*Retrieve the solutiona and calculate corresponding quadratic costs*/
 	numcols = CPXgetnumcols(env, lp);
 	sol_x = create_double_vector(numcols);
@@ -723,14 +656,12 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 			}
 		}
 	}
-
 	UBOptUFLP = UFLPrelval;
 	for (i = 0; i < NN; i++) {
 		for (j = 0; j < NN; j++) {
 			UBOptUFLP += W[i][j] * (c_t[assigmnents[i]][assigmnents[j]]);
 		}
 	}
-
 	//printf("LB: %.2f UB: %.2f initial facilities: ", UFLPrelval, UBOptUFLP);
 	for (i = 0; i < count_c; i++) {
 		if (sol_x[pos_z_red[z_cand[i].k][i]] > 0.5) {
@@ -739,18 +670,12 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 		}
 	}
 	//printf("\n");
-	
 	//printf("Initial Lowerbound: %lf \t Upperbound from SSCFLP: %lf\t Upperbound from optimal SSCFLP: %lf \n", UFLPrelval, UFLPrelval, UBOptUFLP);
 	//UBsearchUFLP = UpperBound;
-
 	free(sol_x);
 	free(pos_z_red);
-	
 TERMINATE:
-
 	/* Free the allocated vectors */
-
-
 	if (lp != NULL) {
 		status = CPXfreeprob(env, &lp);
 		if (status) {
@@ -767,7 +692,6 @@ TERMINATE:
 		}
 	}
 	//free(x);
-
 	return status;
 }
 
@@ -778,9 +702,7 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 	double   valor;
 	int      plant1, node;
 	int      flag = 0;
-
 	MinCostChange = *vs;
-
 	for (i = 0; i < NN; i++) {
 		if (fixed_zero[i] == 0 && current_open_plants[i] == 0 && b[i][0] - O[i] >= 0) {
 			//current_open_plants[i] = 1;
@@ -808,7 +730,6 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 					valor += W[k][m] * (c_c[k][allocation[k]] + c_t[allocation[k]][allocation[m]] + c_d[allocation[m]][m]);
 				}
 			}
-
 			if (valor < MinCostChange) {
 				memcpy(best_allocation, allocation, NN * sizeof(int));
 				memcpy(best_capacity, capacity, NN * sizeof(double));
@@ -818,8 +739,6 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 			//current_open_plants[i] = 0;
 		}
 	}
-
-
 	if (MinCostChange < *vs) {
 		memcpy(current_assigmnent, best_allocation, NN * sizeof(int));
 		memcpy(current_capacity, best_capacity, NN * sizeof(double));
@@ -827,9 +746,7 @@ int open_hub_red(int *current_assigmnent, int *current_open_plants, double *curr
 		*vs = MinCostChange;
 		return 1;
 	}
-
 	return 0;
-
 }
 
 int close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
@@ -840,9 +757,7 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 	int      plant1;
 	int      flag;
 	int      node, node2;
-
 	MinCostChange = *vs;
-
 	for (i = 0; i < NN; i++) {
 		//if (avail_capacity[i] < b[i]) {
 		if (current_open_plants[i] == 1) {
@@ -900,7 +815,6 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 			//current_open_plants[i] = 1;
 		}
 	}
-
 	if (MinCostChange < *vs) {
 		memcpy(current_assigmnent, best_allocation, NN * sizeof(int));
 		memcpy(current_capacity, best_capacity, NN * sizeof(double));
@@ -908,9 +822,7 @@ int close_hub_red(int *current_assigmnent, int *current_open_plants, double *cur
 		*vs = MinCostChange;
 		return 1;
 	}
-
 	return 0;
-
 }
 
 int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double *current_capacity, double *vs)
@@ -922,9 +834,7 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 	int      plant2, node1, node2, node;
 	double   min_val;
 	int      flag = 0;
-
 	MinCostChange = *vs;
-
 	for (k = 0; k < NN; k++) {
 		for (m = 0; m < NN; m++) {
 			if (fixed_zero[k] == 0 && current_open_plants[m] == 1 && current_open_plants[k] == 0 && b[k][0] - O[k] > 0 ) {
@@ -977,7 +887,6 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 						if (capacity[k] < menor_O)
 							break;
 					}
-
 					valor = 0;
 					for (i = 0; i < NN; i++) {
 						if (current_open_plants[i] == 1)
@@ -1001,9 +910,7 @@ int open_close_hub_red(int *current_assigmnent, int *current_open_plants, double
 			}
 		}
 	}
-
 	return 0;
-
 }
 
 int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
@@ -1038,13 +945,9 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	int **pos_z_red;
 	int		nodecount, statusP;
 	int cur_numcols;
-
 	pos_z_red = create_int_matrix(NN, NN);
-
 	start = clock();
-
 	objsen = 1; //min
-
 	//Initialize CPLEX environment
 	env = CPXopenCPLEX(&status);
 	if (env == NULL) {
@@ -1053,7 +956,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
 	// Create the problem in CPLEX 
 	strcpy(probname, "UHLPSA");
 	lp = CPXcreateprob(env, &status, probname);
@@ -1063,8 +965,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
-
 	//Define z_ik variables
 	index1 = 0;  // index of columns
 	numcols = NN * NN;
@@ -1072,7 +972,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	d_vector(&lb, numcols, "open_cplex:8");
 	d_vector(&ub, numcols, "open_cplex:9");
 	c_vector(&ctype, numcols, "open_cplex:01");
-
 	for (i = 0; i < NN; i++) {
 		for (k = 0; k < NN; k++) {
 			if (i != k && current_open_plants[i] == 0 && current_open_plants[k] == 1) {
@@ -1092,8 +991,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	free(lb);
 	free(ub);
 	free(ctype);
-
-
 	//Add assignment constraints  \sum_{k \in N} z_ik = 1
 	numrows = NN;
 	numnz = NN * NN;
@@ -1102,7 +999,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (i = 0; i < NN; i++) {
@@ -1126,9 +1022,7 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	free(matval);
 	free(sense);
 	free(rhs);
-
 	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
-
 	numrows = NN;
 	numnz = NN * (NN + 1);
 	d_vector(&rhs, numrows, "open_cplex:2");
@@ -1136,7 +1030,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (k = 0; k < NN; k++) {
@@ -1160,8 +1053,6 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	free(matval);
 	free(sense);
 	free(rhs);
-
-
 	//branch and bound parameters
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF); //output display
 	//CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
@@ -1186,14 +1077,10 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
 	//	CPXsetintparam(env,CPX_PARAM_PREIND,0);
 	//CPXsetintparam(env,CPX_PARAM_MIPORDIND,CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-
-
 	///* Turn on traditional search for use with control callbacks */
 	//status = CPXsetintparam (env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 	//if ( status )  goto TERMINATE;
-
 	CPXmipopt(env, lp);  //solve the integer program
-
 	i = CPXgetstat(env, lp);
 	/*if (i == 101)
 		printf("Optimal solution found\n");
@@ -1229,12 +1116,8 @@ int Reassign_nodes_red(int *best_assigmnent1, int *current_open_plants)
 		statusP = 0;
 	end = clock();
 	cpuGenAss+=(double)(end - start) / CLOCKS_PER_SEC;
-
 TERMINATE:
-
 	/* Free the allocated vectors */
-
-
 	if (lp != NULL) {
 		status = CPXfreeprob(env, &lp);
 		if (status) {
@@ -1250,7 +1133,6 @@ TERMINATE:
 			fprintf(stderr, "%s", errmsg);
 		}
 	}
-
 	free(pos_z_red);
 	//free(x);
 	return statusP;
@@ -1287,12 +1169,8 @@ int Reassign_nodes(int* best_assigmnent1)
 	int* indices, * priority;
 	int		nodecount, statusP;
 	int cur_numcols;
-
-
 	start = clock();
-
 	objsen = 1; //min
-
 	//Initialize CPLEX environment
 	env = CPXopenCPLEX(&status);
 	if (env == NULL) {
@@ -1301,7 +1179,6 @@ int Reassign_nodes(int* best_assigmnent1)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
 	// Create the problem in CPLEX 
 	strcpy(probname, "UHLPSA");
 	lp = CPXcreateprob(env, &status, probname);
@@ -1311,8 +1188,6 @@ int Reassign_nodes(int* best_assigmnent1)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-
-
 	//Define z_ik variables
 	index1 = 0;  // index of columns
 	numcols = NN * NN;
@@ -1320,7 +1195,6 @@ int Reassign_nodes(int* best_assigmnent1)
 	d_vector(&lb, numcols, "open_cplex:8");
 	d_vector(&ub, numcols, "open_cplex:9");
 	c_vector(&ctype, numcols, "open_cplex:01");
-
 	for (i = 0; i < NN; i++) {
 		for (k = 0; k < NN; k++) {
 			if (i != k && open_plants[i] == 0 && open_plants[k] == 1) {
@@ -1340,8 +1214,6 @@ int Reassign_nodes(int* best_assigmnent1)
 	free(lb);
 	free(ub);
 	free(ctype);
-
-
 	//Add assignment constraints  \sum_{k \in N} z_ik = 1
 	numrows = NN;
 	numnz = NN * NN;
@@ -1350,7 +1222,6 @@ int Reassign_nodes(int* best_assigmnent1)
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (i = 0; i < NN; i++) {
@@ -1374,9 +1245,7 @@ int Reassign_nodes(int* best_assigmnent1)
 	free(matval);
 	free(sense);
 	free(rhs);
-
 	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
-
 	numrows = NN;
 	numnz = NN * (NN + 1);
 	d_vector(&rhs, numrows, "open_cplex:2");
@@ -1384,7 +1253,6 @@ int Reassign_nodes(int* best_assigmnent1)
 	i_vector(&matbeg, numrows, "open_cplex:4");
 	i_vector(&matind, numnz, "open_cplex:6");
 	d_vector(&matval, numnz, "open_cplex:7");
-
 	index = 0;
 	index1 = 0;
 	for (k = 0; k < NN; k++) {
@@ -1408,8 +1276,6 @@ int Reassign_nodes(int* best_assigmnent1)
 	free(matval);
 	free(sense);
 	free(rhs);
-
-
 	//branch and bound parameters
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF); //output display
 	//CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
@@ -1434,14 +1300,10 @@ int Reassign_nodes(int* best_assigmnent1)
 	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
 	//	CPXsetintparam(env,CPX_PARAM_PREIND,0);
 	//CPXsetintparam(env,CPX_PARAM_MIPORDIND,CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-
-
 	///* Turn on traditional search for use with control callbacks */
 	//status = CPXsetintparam (env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
 	//if ( status )  goto TERMINATE;
-
 	CPXmipopt(env, lp);  //solve the integer program
-
 	i = CPXgetstat(env, lp);
 	/*if (i == 101)
 		printf("Optimal solution found\n");
@@ -1475,12 +1337,8 @@ int Reassign_nodes(int* best_assigmnent1)
 	}
 	else
 		statusP = 0;
-
 TERMINATE:
-
 	/* Free the allocated vectors */
-
-
 	if (lp != NULL) {
 		status = CPXfreeprob(env, &lp);
 		if (status) {
@@ -1496,16 +1354,13 @@ TERMINATE:
 			fprintf(stderr, "%s", errmsg);
 		}
 	}
-
 	//free(x);
 	return statusP;
 }
 
 double sum2_F_ijkm(int i, int j, int k, int m, int* assignment) {
-
 	int t;
 	double suma = 0;
-
 	for (t = 0; t < NN; t++) {
 		if (i != t && j != t)
 			suma += W[i][t] * (c_c[i][k] + c_t[k][assignment[t]] + c_d[assignment[t]][t]) + W[t][i] * (c_c[t][assignment[t]] + c_t[assignment[t]][k] + c_d[k][i]);
@@ -1521,22 +1376,17 @@ double sum2_F_ijkm(int i, int j, int k, int m, int* assignment) {
 		}
 	}
 	suma += W[i][j] * (c_c[i][k] + c_t[k][m] + c_d[m][j]) + W[j][i] * (c_c[j][m] + c_t[m][k] + c_d[k][i]);
-
 	return suma;
 }
 
-
 double sum_F_ijkm(int i, int k, int* assignment) {
-
 	int j;
 	double suma = 0;
-
 	for (j = 0; j < NN; j++) {
 		if (i != j)
 			suma += W[i][j] * (c_c[i][k] + c_t[k][assignment[j]] + c_d[assignment[j]][j]) + W[j][i] * (c_c[j][assignment[j]] + c_t[assignment[j]][k] + c_d[k][i]);
 		else
 			suma += W[i][j] * (c_c[i][k] + c_t[k][k] + c_d[k][j]);
 	}
-
 	return suma;
 }
