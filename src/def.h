@@ -164,7 +164,6 @@ int close_hub(int *, double *);
 int open_close_hub(int *, double *);
 int NetFlow_TP(double *, int , int );
 static int buildNetwork (CPXENVptr , CPXNETptr , double *, int , int);
-static int buildRealNetwork (CPXENVptr , CPXNETptr , double *, int , int );
 void Define_Core_Point(void);
 void Update_Core_Point(double *);
 void Original_Model(void);

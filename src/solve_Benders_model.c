@@ -65,15 +65,9 @@ int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp) {	//Here we will set the br
 
 
 int CPXPUBLIC 
-mycutcallback (CPXCENVptr env,
-               void       *cbdata,
-               int        wherefrom,
-               void       *cbhandle,
-               int        *useraction_p)
+mycutcallback (CPXCENVptr env, void *cbdata, int wherefrom, void  *cbhandle, int *useraction_p)
 {
    int status = 0;
-
-
    CUTINFOptr cutinfo = (CUTINFOptr) cbhandle;
 
    int      numcols  = cutinfo->numcols;
@@ -318,8 +312,6 @@ void free_and_null (char **ptr)
       *ptr = NULL;
    }
 } /* END free_and_null */ 
-
-
 
 int NetFlow_TP(double *sol_z, int Origin_Node, int Destin_Node)
 {
@@ -577,130 +569,6 @@ TERMINATE:
 
 }  /* END buildnetwork */
 
-int buildRealNetwork (CPXENVptr env, CPXNETptr net, double *z_sol, int Origin_Node, int Destin_Node)
-{
-   int status = 0;
-   int k,m;
-   double sum_supply_i, sum_supply_j;
-   int NNODES_i = count_cand_hubs;//No. of potential 1st hub (k)
-   int NNODES_j = count_cand_hubs;//No. of potential 2nd hub (m)
-   int NNODES = NNODES_i + NNODES_j;//NNODES_i hubs k and NNODES_j hubs m
-   int NARCS = NNODES_i*NNODES_j;
-   int count=0;
-   
-   //int *tail = new int[NARCS], *head = new int[NARCS];
-   //double *obj = new double[NARCS],*ub = new double[NARCS],*lb = new double[NARCS];
-   //double *supply = new double[NNODES];
-
-   int *indices;
-   double *obj, *ub, *lb;
-   double *supply;
-
-   d_vector(&supply,NNODES,"open_cplex:7");
-   i_vector(&indices,NNODES,"open_cplex:7");
-   
-   ////Using the actual solution value.
-   //sum_supply_i = 0;
-	for (k = 0; k < NNODES_i; k++){
-	 supply[k] = z_sol[pos_z[Origin_Node][cand_hubs[k]]];//Supply at hub k = Zik
-	 indices[k]=k;
-	  //sum_supply_i += supply[k];
-	 }
-	//sum_supply_j = 0;
-	 for (m = 0; m < NNODES_j; m++){
-	  supply[NNODES_i + m] = -(z_sol[pos_z[Destin_Node][cand_hubs[m]]]);//Supply at hub m = -Zjm
-	  indices[NNODES_i + m]=NNODES_i + m;
-	 //sum_supply_j += supply[NNODES_i + m];
-	 }
-
-   /* Set optimization sense */
-   status = CPXNETchgsupply (env, net, NNODES, indices, supply);
-
-  if ( status ) goto TERMINATE;
-
-TERMINATE:
-
-   free_and_null ((char **) &indices);
-   free_and_null ((char **) &supply);
-
-   return (status);
-
-}  /* END buildnetwork */
-
-
-//void Define_Core_Point(void)
-//{
-//	int i, k;
-//	double precount, epsilon;
-//	
-//	if(hybrid==0 || hybrid==3){
-//		precount=(double) (p_hubs*1.0/(count_cand_hubs));
-//		epsilon = (double)(1 / (2 * count_cand_hubs));
-//		//printf("Precount=%lf\n",precount);
-//		for (i = 0; i < NN; i++){
-//			if (fixed_zero[i] == 0){
-//				for (k = 0; k < NN; k++){
-//					if (i == k){
-//						core[i][k] = (double)(precount - epsilon);
-//						//printf("corepoint=%lf\n",core[i][k]);
-//						sum_core += core[i][k];
-//					}
-//					else{
-//						if (fixed_zero[k] == 0){
-//							core[i][k] = (double) ((1 - (precount-epsilon)) / (count_cand_hubs - 1));
-//							//("corepoint=%lf\n",core[i][k]);
-//							sum_core += core[i][k];
-//						}
-//					}
-//				}
-//			}
-//			else{
-//				for (k = 0; k < NN; k++){
-//					if (i != k && fixed_zero[k] == 0){
-//						core[i][k] = (double) (1.0 / (count_cand_hubs));
-//						//printf("corepoint=%lf\n",core[i][k]);
-//						sum_core += core[i][k];
-//					}
-//				}
-//			}
-//		}
-//	}
-//	else{
-//		sum_core = 0;
-//		if(count_cand_hubs>1){
-//			for (i = 0; i < NN; i++){
-//				if (fixed_zero[i] == 0){
-//					for (k = 0; k < NN; k++){
-//						if (i == k){
-//							core[i][k] = 0.5;
-//							sum_core += core[i][k];
-//						}
-//						else{
-//							if (fixed_zero[k] == 0){
-//								core[i][k] = 0.5 / (count_cand_hubs - 1);
-//								sum_core += core[i][k];
-//							}
-//						}
-//					}
-//				}
-//				else{
-//					for (k = 0; k < NN; k++){
-//						if (i != k && fixed_zero[k] == 0){
-//							core[i][k] = (double) (1.0 / (count_cand_hubs));
-//							sum_core += core[i][k];
-//						}
-//					}
-//				}
-//			}
-//		}
-//		else{ //This is when there is only one candidate hub
-//			for(i=0;i<NN;i++){
-//				core[i][cand_hubs[0]]=1.0;
-//			}
-//		}
-//	}
-//}
-
 void Define_Core_Point(void)
 {
 	int i, k;
@@ -797,7 +665,6 @@ void Define_Core_Point(void)
 		}
 	}
 }
-
 
 void Update_Core_Point(double *z_sol){
 
