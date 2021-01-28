@@ -34,6 +34,8 @@ extern ZVAL       *z_closed;
 extern int        *fixed_zero;
 extern int        *best_sol_facilities;
 extern int        *best_sol_assignments;
+extern int* open_plants;
+
 
 int Construct_Feasible_Solution(double *x, double *dj)
 {
@@ -1254,3 +1256,247 @@ TERMINATE:
 	return statusP;
 }
 
+int Reassign_nodes(int* best_assigmnent1)
+{
+	int i, j, k, l, m, count;
+	FILE* out;
+	clock_t  start, end;
+	int index, index1, index11;  // indices auxiliares para rellenar las matrices
+	double   cputime;
+	//Variables to call cplex
+	CPXLPptr  lp;      // data strucutre to store a problem in cplex ...................
+	CPXENVptr env;     // cplex environment.............................................
+	int       numcols; // number of variables ..........................................
+	int       numrows; // number of constraints.........................................
+	int       numnz;   // number of non-zero elements in the matrix ....................
+	int       objsen;  // optimization sense (min:1, max:-1 ) ..........................
+	double* obj;    // objective function coefficients ..............................
+	double* rhs;    // right and side of constraints ................................
+	char* sense;  // constraints sense (<=: 'L', =:'E', >=:'G') ...................
+	int* matbeg; // index of first non-zero element in each column ...............
+	int* matcnt; // number of non-zero element in each column... .................
+	int* matind; // associated row of each non-zelo element ......................
+	double* matval; // coefficient values fo the non-zero elements of constraints....
+	double* lb;     // lower bounds of variables.....................................
+	double* ub;     // upper bounds of variables.....................................
+	int       status;  // optimization status......................... .................
+	double* x;      // solution vector (double, even if the problem is integer) .....
+	char probname[16]; // problem name for cplex .......................................
+	char* ctype;  // variable type ('C', 'I', 'B') only if integer.................
+	double    value;   // objevtive value of solution ..................................
+	int* indices, * priority;
+	int		nodecount, statusP;
+	int cur_numcols;
+
+
+	start = clock();
+
+	objsen = 1; //min
+
+	//Initialize CPLEX environment
+	env = CPXopenCPLEX(&status);
+	if (env == NULL) {
+		char  errmsg[1024];
+		printf("Could not open CPLEX. \n");
+		CPXgeterrorstring(env, status, errmsg);
+		printf("%s", errmsg);
+	}
+
+	// Create the problem in CPLEX 
+	strcpy(probname, "UHLPSA");
+	lp = CPXcreateprob(env, &status, probname);
+	if (env == NULL) {
+		char  errmsg[1024];
+		printf("Could not create LP. \n");
+		CPXgeterrorstring(env, status, errmsg);
+		printf("%s", errmsg);
+	}
+
+
+	//Define z_ik variables
+	index1 = 0;  // index of columns
+	numcols = NN * NN;
+	d_vector(&obj, numcols, "open_cplex:1");
+	d_vector(&lb, numcols, "open_cplex:8");
+	d_vector(&ub, numcols, "open_cplex:9");
+	c_vector(&ctype, numcols, "open_cplex:01");
+
+	for (i = 0; i < NN; i++) {
+		for (k = 0; k < NN; k++) {
+			if (i != k && open_plants[i] == 0 && open_plants[k] == 1) {
+				pos_z[i][k] = index1;
+				obj[index1] = (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
+				ctype[index1] = 'B';
+				lb[index1] = 0;
+				ub[index1] = 1;
+				index1++;
+			}
+		}
+	}
+	status = CPXnewcols(env, lp, index1, obj, lb, ub, ctype, NULL);
+	if (status)
+		fprintf(stderr, "CPXnewcols failed.\n");
+	free(obj);
+	free(lb);
+	free(ub);
+	free(ctype);
+
+
+	//Add assignment constraints  \sum_{k \in N} z_ik = 1
+	numrows = NN;
+	numnz = NN * NN;
+	d_vector(&rhs, numrows, "open_cplex:2");
+	c_vector(&sense, numrows, "open_cplex:3");
+	i_vector(&matbeg, numrows, "open_cplex:4");
+	i_vector(&matind, numnz, "open_cplex:6");
+	d_vector(&matval, numnz, "open_cplex:7");
+
+	index = 0;
+	index1 = 0;
+	for (i = 0; i < NN; i++) {
+		if (open_plants[i] == 0) {
+			sense[index1] = 'E';
+			rhs[index1] = 1;
+			matbeg[index1++] = index;
+			for (k = 0; k < NN; k++) {
+				if (i != k && open_plants[k] == 1) {
+					matind[index] = pos_z[i][k];
+					matval[index++] = 1;
+				}
+			}
+		}
+	}
+	status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
+	if (status)
+		fprintf(stderr, "CPXaddrows failed.\n");
+	free(matbeg);
+	free(matind);
+	free(matval);
+	free(sense);
+	free(rhs);
+
+	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
+
+	numrows = NN;
+	numnz = NN * (NN + 1);
+	d_vector(&rhs, numrows, "open_cplex:2");
+	c_vector(&sense, numrows, "open_cplex:3");
+	i_vector(&matbeg, numrows, "open_cplex:4");
+	i_vector(&matind, numnz, "open_cplex:6");
+	d_vector(&matval, numnz, "open_cplex:7");
+
+	index = 0;
+	index1 = 0;
+	for (k = 0; k < NN; k++) {
+		if (open_plants[k] == 1) {
+			sense[index1] = 'L';
+			rhs[index1] = b[k][0] - O[k];
+			matbeg[index1++] = index;
+			for (i = 0; i < NN; i++) {
+				if (i != k && open_plants[i] == 0) {
+					matind[index] = pos_z[i][k];
+					matval[index++] = O[i];
+				}
+			}
+		}
+	}
+	status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
+	if (status)
+		fprintf(stderr, "CPXaddrows failed.\n");
+	free(matbeg);
+	free(matind);
+	free(matval);
+	free(sense);
+	free(rhs);
+
+
+	//branch and bound parameters
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF); //output display
+	//CPXsetintparam(env,CPX_PARAM_INTSOLLIM,1);    //stops after finding first integer sol.
+	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 4); //different levels of output display
+	CPXsetintparam(env, CPX_PARAM_MIPINTERVAL, 1);
+	//CPXsetintparam(env,CPX_PARAM_MIPEMPHASIS,1);//0:balanced; 1:feasibility; 2:optimality,3:bestbound, 4:hiddenfeas
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 500); // time limit
+	CPXsetdblparam(env, CPX_PARAM_TRELIM, 14000); // B&B memory limit
+	//CPXsetdblparam(env,CPX_PARAM_EPGAP, 0.0000000001); // e-optimal solution (%gap)
+	//CPXsetdblparam(env,CPX_PARAM_EPAGAP, 0.0000000001); // e-optimal solution (absolute value)
+	//CPXsetdblparam(env,CPX_PARAM_EPINT, 0.0000000001); // integer precision
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
+	//CPXsetdblparam(env,CPX_PARAM_EPRHS, 0.0000001);
+	//	CPXsetintparam(env,CPX_PARAM_REDUCE, 0);  // only needed when adding lazy constraints
+	//CPXsetintparam(env,CPX_PARAM_HEURFREQ, 0); //heuristic frequency and intensisty 
+	//CPXoptimize(env,lp);   solve a linear program
+	//CPXgetbestobjval(env,lp,&value);   \\obtain the LP relaxation bound
+	//printf("LP lower bound: %f   ",value);
+	//CPXsetdblparam(env,CPX_PARAM_CUTSFACTOR, 1.0);  //limit the number of cuts added by cplex 1.0002
+	//CPXsetdblparam(env,CPX_PARAM_CUTUP,238016.277+0.001); // provide an initial upper bound
+	//CPXsetintparam(env,CPX_PARAM_MIPEMPHASIS,CPX_MIPEMPHASIS_OPTIMALITY);  // MIP emphasis: optimality, feasibility, moving best bound
+	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
+	//	CPXsetintparam(env,CPX_PARAM_PREIND,0);
+	//CPXsetintparam(env,CPX_PARAM_MIPORDIND,CPX_ON); // Turn on or off the use of priorities on bracnhing variables
+
+
+	///* Turn on traditional search for use with control callbacks */
+	//status = CPXsetintparam (env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL);
+	//if ( status )  goto TERMINATE;
+
+	CPXmipopt(env, lp);  //solve the integer program
+
+	i = CPXgetstat(env, lp);
+	/*if (i == 101)
+		printf("Optimal solution found\n");
+	else if (i == 102)
+		printf("e-optimal solution found\n");
+	else if (i == 107)
+		printf("Time limit reached\n");
+	else
+		printf("Unknown stopping criterion (%d)\n", i);*/
+	if (i == 101 || i == 102) {
+		// retrive solution values
+		statusP = 1;
+		numcols = CPXgetnumcols(env, lp);
+		d_vector(&x, numcols, "open_cplex:9");
+		CPXgetmipobjval(env, lp, &value);
+		CPXgetmipx(env, lp, x, 0, numcols - 1);  // obtain the values of the decision variables
+		for (i = 0; i < NN; i++) {
+			if (open_plants[i] == 0) {
+				for (k = 0; k < NN; k++) {
+					if (i != k && open_plants[k] == 1 && x[pos_z[i][k]] > 0.5) {
+						best_assigmnent1[i] = k;
+						break;
+					}
+				}
+			}
+			else {
+				best_assigmnent1[i] = i;
+			}
+		}
+		free(x);
+	}
+	else
+		statusP = 0;
+
+TERMINATE:
+
+	/* Free the allocated vectors */
+
+
+	if (lp != NULL) {
+		status = CPXfreeprob(env, &lp);
+		if (status) {
+			fprintf(stderr, "CPXfreeprob failed, error code %d.\n", status);
+		}
+	}
+	if (env != NULL) {
+		status = CPXcloseCPLEX(&env);
+		if (status) {
+			char  errmsg[1024];
+			fprintf(stderr, "Could not close CPLEX environment.\n");
+			CPXgeterrorstring(env, status, errmsg);
+			fprintf(stderr, "%s", errmsg);
+		}
+	}
+
+	//free(x);
+	return statusP;
+}
