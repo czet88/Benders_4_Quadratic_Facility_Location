@@ -126,6 +126,7 @@ typedef struct Solpool{
 char** create_stringarray(int n, int m);
 void	free_stringarray(char*** ptr, int n);
 void	free_char_vector(char** ptr);
+int		add_assignment_constr(CPXENVptr env, CPXLPptr lp);
 
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	

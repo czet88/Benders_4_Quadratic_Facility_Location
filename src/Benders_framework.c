@@ -77,26 +77,8 @@ void Benders_root_node_heur(void)
 	tol_sep_cover = 0.001;
 	cputime_SP = 0;
 	total_assign_fixed = 0;
-	initial_cuts = (INCUTS*)calloc(1000, sizeof(INCUTS));
-	initial_cuts[count_added].sense = (char*)calloc(1, sizeof(char));
-	initial_cuts[count_added].rhs = create_double_vector(1);
-	initial_cuts[count_added].beg = create_int_vector(1);
-	initial_cuts[count_added].ind = create_int_vector(NN * NN + 1);
-	initial_cuts[count_added].val = create_double_vector(NN * NN + 1);
-	initial_cuts[count_added].origval = create_double_vector(NN * NN);
+	
 	x = create_double_vector(NN * NN + NN);
-	z_open = (ZVAL*)calloc(NN, sizeof(ZVAL));
-	z_closed = (ZVAL*)calloc(NN, sizeof(ZVAL));
-	cand_hubs = create_int_vector(NN);
-	fixed_one = create_int_vector(NN);
-	fixed_zero = create_int_vector(NN);
-	count_cand_hubs = NN;
-	/***Some precalculations*****/
-	for (k = 0; k < NN; k++) {
-		cand_hubs[k] = k;
-		fixed_one[k] = 0;
-		fixed_zero[k] = 0;
-	}
 	start = clock();
 	Define_Core_Point();
 	objsen = 1; //min
@@ -120,123 +102,31 @@ void Benders_root_node_heur(void)
 	
 	//Add the variables with their respective positions
 	glob_numcols = add_variables(env, lp);
-	//Add assignment constraints  \sum_{k \in N} z_ik = 1
-	numrows = NN;
-	numnz = NN * NN;
-	d_vector(&rhs, numrows, "open_cplex:2");
-	c_vector(&sense, numrows, "open_cplex:3");
-	i_vector(&matbeg, numrows, "open_cplex:4");
-	i_vector(&matind, numnz, "open_cplex:6");
-	d_vector(&matval, numnz, "open_cplex:7");
-	index = 0;
-	index1 = 0;
-	for (i = 0; i < NN; i++) {
-		sense[index1] = 'E';
-		rhs[index1] = 1;
-		matbeg[index1++] = index;
-		for (k = 0; k < NN; k++) {
-			matind[index] = pos_z[i][k];
-			matval[index++] = 1;
-		}
+
+	//Add assignment constraint
+	if (add_assignment_constr(env, lp)) {
+		printf("ERROR: Unable to add assignment constraint");
+		exit(1);
 	}
-	status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-	if (status)
-		fprintf(stderr, "CPXaddrows failed.\n");
-	free(matbeg);
-	free(matind);
-	free(matval);
-	free(sense);
-	free(rhs);
+
 	//Add linking constraints  z_ik <= z_kk
-	numrows = NN * (NN - 1);
-	numnz = 2 * NN * (NN - 1);
-	d_vector(&rhs, numrows, "open_cplex:2");
-	c_vector(&sense, numrows, "open_cplex:3");
-	i_vector(&matbeg, numrows, "open_cplex:4");
-	i_vector(&matind, numnz, "open_cplex:6");
-	d_vector(&matval, numnz, "open_cplex:7");
-	index = 0;
-	index1 = 0;
-	for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			if (i != k) {
-				sense[index1] = 'L';
-				rhs[index1] = 0;
-				matbeg[index1++] = index;
-				matind[index] = pos_z[i][k];
-				matval[index++] = 1;
-				matind[index] = pos_z[k][k];
-				matval[index++] = -1;
-			}
-		}
+	if (add_linking_constr(env, lp)) {
+		printf("ERROR: Unable to add linking constraint");
+		exit(1);
 	}
-	status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-	if (status)
-		fprintf(stderr, "CPXaddrows failed.\n");
-	free(matbeg);
-	free(matind);
-	free(matval);
-	free(sense);
-	free(rhs);
 	//Add exactly p_hubs
 	if (hybrid == 0 || hybrid == 3) {
-		numrows = 1;
-		numnz = NN;
-		d_vector(&rhs, numrows, "open_cplex:2");
-		c_vector(&sense, numrows, "open_cplex:3");
-		i_vector(&matbeg, numrows, "open_cplex:4");
-		i_vector(&matind, numnz, "open_cplex:6");
-		d_vector(&matval, numnz, "open_cplex:7");
-		index = 0;
-		index1 = 0;
-		sense[index1] = 'E';
-		rhs[index1] = p_hubs;
-		matbeg[index1++] = index;
-		for (i = 0; i < NN; i++) {
-			matind[index] = pos_z[i][i];
-			matval[index++] = 1;
+		if (add_phubs_constr(env, lp)) {
+			printf("ERROR: Unable to add p-hubs constraint");
+			exit(1);
 		}
-		status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-		if (status)
-			fprintf(stderr, "CPXaddrows failed.\n");
-		free(matbeg);
-		free(matind);
-		free(matval);
-		free(sense);
-		free(rhs);
 	}
 	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
 	if (Capacitated_instances == 1) {
-		numrows = NN;
-		numnz = NN * (NN + 1);
-		d_vector(&rhs, numrows, "open_cplex:2");
-		c_vector(&sense, numrows, "open_cplex:3");
-		i_vector(&matbeg, numrows, "open_cplex:4");
-		i_vector(&matind, numnz, "open_cplex:6");
-		d_vector(&matval, numnz, "open_cplex:7");
-		index = 0;
-		index1 = 0;
-		for (k = 0; k < NN; k++) {
-			sense[index1] = 'L';
-			rhs[index1] = 0;
-			matbeg[index1++] = index;
-			matind[index] = pos_z[k][k];
-			matval[index++] = -(b[k][0] - O[k]);
-			for (i = 0; i < NN; i++) {
-				if (i != k) {
-					matind[index] = pos_z[i][k];
-					matval[index++] = O[i];
-				}
-			}
+		if (add_linking_constr(env, lp)) {
+			printf("ERROR: Unable to add capacity constraint");
+			exit(1);
 		}
-		status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-		if (status)
-			fprintf(stderr, "CPXaddrows failed.\n");
-		free(matbeg);
-		free(matind);
-		free(matval);
-		free(sense);
-		free(rhs);
 	}
 	//CPXwriteprob(env, lp, "BendersCHLPSA_LP.lp", NULL);
 	//CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_OFF); //output display

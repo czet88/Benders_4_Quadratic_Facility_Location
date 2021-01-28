@@ -251,6 +251,25 @@ void initialize_memory(void) {
 	  costoso[i].A = (CORD *)calloc(NN, sizeof(CORD));
   cover.z = create_int_vector(NN);
   ord_nodes = (NORD *)calloc(NN, sizeof(NORD));
+  initial_cuts = (INCUTS*)calloc(1000, sizeof(INCUTS));
+  initial_cuts[count_added].sense = (char*)calloc(1, sizeof(char));
+  initial_cuts[count_added].rhs = create_double_vector(1);
+  initial_cuts[count_added].beg = create_int_vector(1);
+  initial_cuts[count_added].ind = create_int_vector(NN * NN + 1);
+  initial_cuts[count_added].val = create_double_vector(NN * NN + 1);
+  initial_cuts[count_added].origval = create_double_vector(NN * NN);
+  z_open = (ZVAL*)calloc(NN, sizeof(ZVAL));
+  z_closed = (ZVAL*)calloc(NN, sizeof(ZVAL));
+  cand_hubs = create_int_vector(NN);
+  fixed_one = create_int_vector(NN);
+  fixed_zero = create_int_vector(NN);
+  count_cand_hubs = NN;
+  /***Some precalculations*****/
+  for (i = 0; i < NN; i++) {
+	  cand_hubs[i] = i;
+	  fixed_one[i] = 0;
+	  fixed_zero[i] = 0;
+  }
 }
 
 void free_memory(void)
