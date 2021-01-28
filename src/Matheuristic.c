@@ -1,39 +1,5 @@
 #include "def.h"
-extern double     **c, **c_c, **c_t, **c_d, **f, **W, *O, *D, **b;
-extern double     collect,transfer,distribute;
-extern int        NN, Q;
-extern double     MAX_DOUBLE;
-extern double     UpperBound;
-extern coordinate *pts;
-extern int        **pos_z;
-extern int        pos_eta;
-extern double     old_lower_bound;
-extern double     ***alpha;
-extern double     ***beta;
-extern double     **core;
-extern double     LP_lower_bound;
-extern SCUTS      sepcut;
-extern double     sum_core;
-extern double     old_objval;
-extern int        MG;
-extern double     *initial_x;
-extern int        *best_assigmnent;
-//extern int        *open_plants;
-extern int        *allocation;
-extern int        *best_allocation;
-extern double     *capacity;
-//extern double     *avail_capacity;
-extern double     *best_capacity;
-extern double     menor_O;
-extern PORD       *costoso;
-extern SELEC      *orden_O;
-extern double     AggregatedDemand;
-extern int Capacitated_instances;
-extern ZVAL       *z_closed;
-extern int        *fixed_zero;
-extern int        *best_sol_facilities;
-extern int        *best_sol_assignments;
-extern int* open_plants;
+
 int Construct_Feasible_Solution(double *x, double *dj)
 {
 	int i, k, m, r, rr, count_c, status, num_modify, target_open_facilties, min_range;

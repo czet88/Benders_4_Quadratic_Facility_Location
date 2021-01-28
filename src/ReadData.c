@@ -1,37 +1,5 @@
 #include "def.h"
-extern double     **c, **c_c, **c_t, **c_d, **f, **W, *O, *D, **b;
-extern double     collect,transfer,distribute, AD;
-extern int        NN, Q;
-extern double     MAX_DOUBLE;
-extern double     UpperBound;
-extern coordinate *pts;
-extern int        **pos_z;
-extern int        pos_eta;
-extern double     old_lower_bound;
-extern double     ***alpha;
-extern double     ***beta;
-extern double     **core;
-extern double     LP_lower_bound;
-extern SCUTS      sepcut;
-extern double     *initial_x;
-//extern int        *best_assigmnent;
-extern int        *open_plants;
-extern int        *allocation;
-extern int        *best_allocation;
-extern double     *capacity;
-extern double     *avail_capacity;
-extern double     *best_capacity;
-extern double     menor_O;
-extern PORD       *costoso;
-extern SELEC      *orden_O;
-extern double     AggregatedDemand;
-extern COV        cover;
-extern NORD       *ord_nodes;
-extern ORD        *ord_O;
-extern ORD        *ord_D;
-extern int        *best_sol_facilities;
-extern int        *best_sol_assignments;
-//extern int Capacitated_instances;
+
 void read_instance (const char *name, int trans_fact, double coll, double trans, double distr, int APset)
 {
   int i,j,p,k,e, ee, value,s, incl, q, fake;
@@ -227,6 +195,8 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 
 void initialize_memory(void) {
   int i;
+  old_objval = 0;
+  count_same_node = 0;
   cpuFacLocIni = 0;
   cpuGenAss = 0;
   /****Carlos's modifications for initializing the previous solutions*****/

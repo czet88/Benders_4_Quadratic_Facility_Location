@@ -17,7 +17,9 @@
 #define NOT_AVAIL -1
 #define NONE -1
 #define MIN(a, b) (((a) > (b)) ? (b) : (a))
-#define rand_double()(rand()/(double) RAND_MAX) // new added
+#define rand_double()(rand()/(double) RAND_MAX)
+#define MAX_DOUBLE  10000000000
+
 struct cutinfo {
    CPXLPptr lp;
    int      numcols;
@@ -31,7 +33,9 @@ struct cutinfo {
    double   nodeobjval;
    int      objsen;
 };
+
 typedef struct cutinfo CUTINFO, *CUTINFOptr;
+
 typedef struct INCUTS {
 	char    *sense;
 	double  *rhs;
@@ -41,70 +45,85 @@ typedef struct INCUTS {
 	double  *origval;
 	int     index;
 } INCUTS;
+
 typedef struct SCUTS {
   double value;
   int cutnz;
   int *cutind;
   double *cutval;
  } SCUTS;
+
 typedef struct COMMOD {
   int  *i;
   int  *j;
   int  dim;
 } COMMOD;
+
 typedef struct EDGES {
   int  e1;
   int  e2;
   int  e;
 } EDGES;
+
 typedef struct COV {
 	int rhs;
 	int *z;
 } COV;
+
 typedef struct NORD {
 	int i;
 	int removed;
 	double coeff;
 } NORD;
+
 typedef struct COMM {
   double diff;
   int    comm;
 } COMM;
+
 typedef struct ZVAL {
 	int k;
 	double value;
 } ZVAL;
+
 typedef struct CCUTS {
   int node;
   double val;
 } CCUTS;
+
 typedef struct{
   int i;                        /* index in original */
   int new_i;                    /* new index */
   double x,y;
 } coordinate;
+
 typedef struct CORD {
 	int j;
 	double delta;
 } CORD;
+
 typedef struct PORD {
 	int i;
 	CORD *A;
 } PORD;
+
 typedef struct SELEC {
 	int hub;
 	double cociente;
 } SELEC;
+
 typedef struct ORD {
 	int i;
 	double W;
 } ORD;
+
 /********Carlos's modifications*******/
 typedef struct Solpool{
 	double preeta;
 	int * indhub;
 	int num_comb;
 }Solpool;
+
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	
 int Compareval(const void *, const void *);
@@ -209,3 +228,48 @@ void read_heur_cl_param(const char*);
  int FlagHeuristic;
  int FlagLocalSearch;
  int FlagIteratedLocalSearch;
+
+ /*Variables initially declared in the main*/
+ double** c, ** c_c, ** c_t, ** c_d, ** f, ** W, * O, * D, ** b;
+ double     collect, transfer, distribute, AD;
+ int        NN, Q, p_hubs;
+ double     UpperBound;
+ coordinate* pts;
+ int** pos_z;
+ int        pos_eta;
+ double     old_lower_bound;
+ double*** alpha;
+ double*** beta;
+ double** core;
+ double     LP_lower_bound;
+ SCUTS      sepcut;
+ INCUTS* initial_cuts;
+ double     sum_core;
+ int        MG;
+ double* initial_x;
+ int* allocation;
+ int* best_allocation;
+ int* open_plants;
+ double* capacity;
+ double* best_capacity;
+ double* avail_capacity;
+ double     menor_O;
+ PORD* costoso;
+ SELEC* orden_O;
+ double     AggregatedDemand;
+ ZVAL* z_open;
+ ZVAL* z_closed;
+ int* cand_hubs;
+ int        count_cand_hubs;
+ int* fixed_zero;
+ int* fixed_one;
+ int        count_added;
+ COV        cover;
+ NORD* ord_nodes;
+ double* multiple;
+ double* coeff_ES;
+ ORD* ord_O;
+ ORD* ord_D;
+ double     sum_supply_i, sum_supply_j;
+ double     old_objval;
+ int        count_same_node;
