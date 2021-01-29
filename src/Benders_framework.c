@@ -3,57 +3,41 @@
 void Benders_root_node_heur(void)
 {
 	int i, j, k, l, m, count;
-	FILE* out;
-	clock_t  start, end, start_SP, end_SP;
 	int index, index1, index11;  // indices auxiliares para rellenar las matrices
 	double   cputime, cputime_SP;
 	//Variables to call cplex
 	CPXLPptr  lp;      // data strucutre to store a problem in cplex ...................
 	CPXENVptr env;     // cplex environment.............................................
-	int       numcols; // number of variables ..........................................
-	int       numrows; // number of constraints.........................................
-	int       numnz;   // number of non-zero elements in the matrix ....................
-	int       objsen;  // optimization sense (min:1, max:-1 ) ..........................
-	double* obj;    // objective function coefficients ..............................
-	double* rhs;    // right and side of constraints ................................
-	char* sense;  // constraints sense (<=: 'L', =:'E', >=:'G') ...................
-	int* matbeg; // index of first non-zero element in each column ...............
-	int* matcnt; // number of non-zero element in each column... .................
-	int* matind; // associated row of each non-zelo element ......................
-	double* matval; // coefficient values fo the non-zero elements of constraints....
-	double* lb;     // lower bounds of variables.....................................
-	double* ub;     // upper bounds of variables.....................................
 	int       status;  // optimization status......................... .................
 	double* x;      // solution vector (double, even if the problem is integer) .....
-	double* dj;
+	FILE* out;
 	char probname[16]; // problem name for cplex .......................................
-	char* ctype;  // variable type ('C', 'I', 'B') only if integer.................
-	double    value;   // objevtive value of solution ..................................
-	double    valuef; //Value of objective function during Partial enumeration.......
 	int		nodecount;
-	int cur_numcols, cur_rows, count_fixed;
+	double    value;   // objevtive value of solution ..................................
+
 	double best_upper_bound;
-	double best_lower_bound, coeff_z, lhs;
-	double   tolerance_sep, tol_sep_cover, aa;
-	int      terminate, flag_added, count_o, count_c, flag_fixed;
-	double sum_O, max_O, sum_x, eval_cut;
-	int is_cover, count_cover;
+	double best_lower_bound;
+	double   tolerance_sep, tol_sep_cover;
 	int* cand_cover;
 	double   EPSOBJ = 0.1;
-	double   epsilon_LP;
+	
 	double   eta_cost = 0;
-	int      iter = 0;
+	
 	int count_cover_cuts = 0;
 	int count_Fenchel_cuts = 0;
-	int assign_fixed, total_assign_fixed;
-	int *beg, *varindices, *effortlevel;
-	double  *values;
+	int total_assign_fixed;
+	int* beg, * varindices, * effortlevel;
+	double* values;
+	int cur_numcols;
+	clock_t  start, end;
+
 	CUTINFO cutinfo;
 	cutinfo.x = NULL;
 	cutinfo.beg = NULL;
 	cutinfo.ind = NULL;
 	cutinfo.val = NULL;
 	cutinfo.rhs = NULL;
+
 	//For the bound changes
 	char* btype;
 	int* bind;
@@ -63,25 +47,19 @@ void Benders_root_node_heur(void)
 	d_vector(&realub, 1, "open_cplex:3");
 	realub[0] = 0;
 	btype[0] = 'U';
-	
+
 	/*******************************/
 	cand_cover = create_int_vector(NN);
 	coeff_ES = create_double_vector(NN);
 	srand(123456789);
 	MG = 1;
 	count_added = 0;
-	//tolerance_sep = -0.0001;
-	tolerance_sep = 0.50;
-	epsilon_LP = 0.005;
-	//epsilon_LP = 0.0000005;
 	tol_sep_cover = 0.001;
 	cputime_SP = 0;
 	total_assign_fixed = 0;
-	
+
 	x = create_double_vector(NN * NN + NN);
-	start = clock();
 	Define_Core_Point();
-	objsen = 1; //min
 	//Initialize CPLEX environment
 	env = CPXopenCPLEX(&status);
 	if (env == NULL) {
@@ -99,7 +77,7 @@ void Benders_root_node_heur(void)
 		CPXgeterrorstring(env, status, errmsg);
 		printf("%s", errmsg);
 	}
-	
+
 	//Add the variables with their respective positions
 	glob_numcols = add_variables(env, lp);
 
@@ -128,434 +106,24 @@ void Benders_root_node_heur(void)
 			exit(1);
 		}
 	}
-	
-	//CPXwriteprob(env, lp, "BendersCHLPSA_LP.lp", NULL);
-	//CPXsetintparam(env,CPX_PARAM_SCRIND,CPX_OFF); //output display
-	//CPXsetintparam(env,CPX_PARAM_MIPDISPLAY,3); //different levels of output display
-    //CPXsetdblparam(env,CPX_PARAM_TRELIM, 14000); // B&B memory limit
-	//CPXsetintparam(env,CPX_PARAM_NUMERICALEMPHASIS,1); //Numerical precision of the time
-	//CPXsetdblparam(env,CPX_PARAM_EPRHS, 0.0000001);
-	//CPXsetintparam(env,CPX_PARAM_REDUCE, 0);  // only needed when adding lazy constraints
-	//CPXsetintparam(env,CPX_PARAM_PARALLELMODE, 1); 
-	//CPXsetintparam(env,CPX_PARAM_PREIND,0);
-	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
-	CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
-	CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);
-	
-	
-	cur_rows = CPXgetnumrows(env, lp);
+
+	//Solve the LP
+	start = clock();
 	cur_numcols = CPXgetnumcols(env, lp);
-	dj = create_double_vector(cur_numcols);
-	d_vector(&rhs, 1, "open_cplex:2");
-	c_vector(&sense, 1, "open_cplex:3");
-	i_vector(&matbeg, 1, "open_cplex:4");
-	i_vector(&matind, NN, "open_cplex:6");
-	d_vector(&matval, NN, "open_cplex:7");
-	count_fixed = 0;
-	//Solve the LP relaxation for the first time
-	status = CPXlpopt(env, lp);
-	if (status) fprintf(stderr, "Failed to optimize LP.\n");
-	CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
-	printf("Initial LP bound: %.2lf\n", value);
-	PopulateLPSupport(x);
-	//Run heuristc using info from fractional solution x
-	if (FlagHeuristic) {
-		printf("Started solving heuristic\n");
-		status = Construct_Feasible_Solution(x, dj);
-		printf("Finished solving heuristic.\n");
-	}
-	//Cutting plane algorithm for solving the root node
-	do {
-		//Simple variable fixing test with reduced cost coefficients
-		printf("Starting elimination test\n");
-		flag_fixed = 0;
-		assign_fixed = 0;
-		if (vers != 5) {			
-			for (i = 0; i < count_cand_hubs; i++) {
-				if (value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]] > UpperBound + 0.01) {
-					//printf("Fix z[%d] = 0  obj+redcost:%.5f  UB:%.5f \n", cand_hubs[i] + 1, value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]], UpperBound);
-					fixed_zero[cand_hubs[i]] = 1;
-					bind[0] = pos_z[cand_hubs[i]][cand_hubs[i]];
-					realub[0] = 0;
-					btype[0] = 'U';
-					status = CPXchgbds(env, lp, 1, bind, btype, realub);
-					if (status) fprintf(stderr, "CPXchange bounds failed.\n");
-					count_fixed++;
-					flag_fixed = 1;
-					not_eligible_hub[cand_hubs[i]][cand_hubs[i]] = 1;
-					eli_per_com[cand_hubs[i]]--;
-					for (k = 0; k < NN; k++) {
-						if (not_eligible_hub[k][cand_hubs[i]] == 0) {
-							bind[0] = pos_z[k][cand_hubs[i]];
-							realub[0] = 0;
-							btype[0] = 'U';
-							status = CPXchgbds(env, lp, 1, bind, btype, realub);
-							not_eligible_hub[k][cand_hubs[i]] = 1;
-							eli_per_com[k]--;
-							assign_fixed++;
-						}
-					}
-				}
-				else {
-					for (k = 0; k < NN; k++) {
-						if (not_eligible_hub[k][cand_hubs[i]] == 0 && value + dj[pos_z[k][cand_hubs[i]]] > UpperBound + 0.01) {
-							assign_fixed++;
-							bind[0] = pos_z[k][cand_hubs[i]];
-							realub[0] = 0;
-							btype[0] = 'U';
-							CPXchgbds(env, lp, 1, bind, btype, realub);
-							not_eligible_hub[k][cand_hubs[i]] = 1;
-							eli_per_com[k]--;
-						}
-					}
-				}
-			}
-			if (assign_fixed > 0) {
-				total_assign_fixed += assign_fixed;
-				printf("Fixed %d assig variables in current iter, total fixed %d, (%.2f percentage) \n", assign_fixed, total_assign_fixed, (float) total_assign_fixed/(NN*NN)*100);
-			}
-			if (flag_fixed == 1) { //If I fixed to 0 some hubs
-				count_cand_hubs = 0;
-				for (k = 0; k < NN; k++) {
-					if (fixed_zero[k] == 0)
-						cand_hubs[count_cand_hubs++] = k;
-				}
-				printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
-			}
-		}
-		printf("Finished elimination test.\n");
-		//Partial Enumeration phase: solve LPs to try to remove potential locations
-		if (((UpperBound - value) / UpperBound * 100 < 1.0 && flag_fixed >=0)) {
-			count_c = 0;
-			for (k = 0; k < count_cand_hubs; k++) {
-				if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
-					z_closed[count_c].k = cand_hubs[k];
-					z_closed[count_c].value = f[cand_hubs[k]][0] * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-					for (i = 0; i < NN; i++) {
-						z_closed[count_c].value += (O[i] * c_c[i][cand_hubs[k]] + D[i] * c_d[i][cand_hubs[k]]) * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-					}
-					count_c++;
-				}
-			}
-			printf("Entered partial enumeration phase to check %d of them\n", count_c);
-			flag_fixed = 0;
-			qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
-			cur_rows = CPXgetnumrows(env, lp);
-			for (k = 0; k < count_c; k++) {  			// Temporarily fix z_kk = 1 to try to permantely close it (i.e. z_k = 0 from now on)
-				printf("k:%d NLB %lf, eps: %.3f ", z_closed[k].k, z_closed[k].value, (value + dj[pos_z[cand_hubs[k]][cand_hubs[k]]])/UpperBound);
-				index = 0;
-				index1 = 0;
-				sense[index1] = 'E';
-				rhs[index1] = 1;
-				matbeg[index1++] = index;
-				matind[index] = pos_z[z_closed[k].k][z_closed[k].k];
-				matval[index++] = 1;
-				status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-				if (status) fprintf(stderr, "CPXaddrows failed.\n");
-				cur_rows++;
-				//CPXwriteprob(env, lp, "BendersPE.lp", NULL);
-				status = CPXlpopt(env, lp);
-				if (status) fprintf(stderr, "Failed to optimize LP.\n");
-				CPXgetobjval(env, lp, &valuef);
-				if (status) fprintf(stderr, "Failed to getx LP.\n");
-				CPXdelrows(env, lp, cur_rows - 1, cur_rows - 1);
-				if (status) fprintf(stderr, "CPXdelrows failed.\n");
-				cur_rows--;
-				//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
-				if (valuef > UpperBound) {
-					printf("Fixed z[%d] = 0, NLB/UB: %.3f, (NLB - LB + RC)/UB: %.3f \n", z_closed[k].k + 1, valuef/UpperBound, (valuef - value + dj[pos_z[cand_hubs[k]][cand_hubs[k]]])/UpperBound);
-					fixed_zero[z_closed[k].k] = 1;
-					bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
-					realub[0] = 0;
-					btype[0] = 'U';
-					CPXchgbds(env, lp, 1, bind, btype, realub);
-					count_fixed++;
-					flag_fixed = 1;
-					for (i = 0; i < NN; i++) {
-						if (not_eligible_hub[i][z_closed[k].k] == 0) {
-							not_eligible_hub[i][z_closed[k].k] = 1;
-							eli_per_com[i]--;
-						}
-					}
-					//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
-				}
-				else {
-					printf("\n");
-				}
-			}
-			printf("Finished partial enumeration phase\n");
-			if (flag_fixed == 1) {
-				count_cand_hubs = 0;
-				for (k = 0; k < NN; k++) {
-					if (fixed_zero[k] == 0)
-						cand_hubs[count_cand_hubs++] = k;
-				}
-				printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
-				//Define_Core_Point();
-				//goto EVALUATE;
-			}
-		}
-		if (flag_fixed == 1 || assign_fixed > 0) {
-			Define_Core_Point();
-			status = CPXlpopt(env, lp);
-			if (status) fprintf(stderr, "Failed to optimize LP.\n");
-			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
-		}
-		//Solve the primal subproblem to find Benders cuts
-		start_SP = clock();
-		iter++;
-		flag_added = 0;
-		index = 0;
-		index1 = 0;
-		printf("Starting to separate Benders cuts\n");
-		if (vers != 3) {
-			Define_Core_Point();
-			Update_Core_Point(x);
-		}
-		for (i = 0; i < NN-1; i++) {
-			for (j = i+1; j < NN; j++) {
-				//Check_CP_MW(x, i, j);				
-				status = NetFlow_TP(x, i, j);
-			}
-		}
-		printf("Finished separating Benders cuts.");
-		initial_cuts[count_added].sense[index1] = 'G';
-		initial_cuts[count_added].rhs[index1] = 0;
-		initial_cuts[count_added].beg[index1++] = index;
-		initial_cuts[count_added].ind[index] = pos_eta;
-		initial_cuts[count_added].val[index++] = 1;
-		lhs = x[pos_eta];
-		// printf("eta >= ");
-		for (i = 0; i < NN; i++) {
-			if (fixed_zero[i] == 0) {
-				for (k = 0; k < NN; k++) {
-					if (fixed_zero[k] == 0) {
-						coeff_z = 0;
-						for (j = 0; j < NN; j++)
-							coeff_z += (-alpha[i][j][k] - beta[j][i][k]);
-						if (ABS(coeff_z) > 0.00001) {
-							initial_cuts[count_added].ind[index] = pos_z[i][k];
-							initial_cuts[count_added].val[index++] = coeff_z;
-							initial_cuts[count_added].origval[pos_z[i][k]] = coeff_z;
-							lhs += coeff_z * x[pos_z[i][k]];
-							//if (x[pos_z[i][k]] > 0.00001)
-							 //   printf("%.2f z[%d][%d] + ", coeff_z, i + 1, k + 1);
-						}
-					}
-				}
-			}
-			else {
-				for (k = 0; k < NN; k++) {
-					if (i != k && fixed_zero[k] == 0) {
-						coeff_z = 0;
-						for (j = 0; j < NN; j++)
-							coeff_z += (-alpha[i][j][k] - beta[j][i][k]);
-						if (ABS(coeff_z) > 0.00001) {
-							initial_cuts[count_added].ind[index] = pos_z[i][k];
-							initial_cuts[count_added].val[index++] = coeff_z;
-							initial_cuts[count_added].origval[pos_z[i][k]] = coeff_z;
-							lhs += coeff_z * x[pos_z[i][k]];
-							//if (x[pos_z[i][k]] > 0.00001)
-							 //   printf("%.2f z[%d][%d] + ", coeff_z, i + 1, k + 1);
-						}
-						else initial_cuts[count_added].origval[pos_z[i][k]] = 0;
-					}
-				}
-			}
-		}
-		//  printf("\n");
-		end_SP = clock();
-		cputime_SP += (double)(end_SP - start_SP) / CLOCKS_PER_SEC;
-		end = clock();
-		//printf("Finished separating more optimality cuts took %lf secs\n",(double)(end_SP - start_SP) / CLOCKS_PER_SEC);
-		cputime = (double)(end - start) / CLOCKS_PER_SEC;
-		//printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
-		if ((-lhs / value) * 100 < tolerance_sep && ((UpperBound - value) / UpperBound) * 100 < 10.0) {
-			flag_added = 0;
-		}
-		else flag_added = 1;
-		if (lhs > -0.001)
-			flag_added = 0;
-		status = CPXaddrows(env, lp, 0, index1, index, initial_cuts[count_added].rhs, initial_cuts[count_added].sense, initial_cuts[count_added].beg, initial_cuts[count_added].ind, initial_cuts[count_added].val, NULL, NULL);
-		if (status)  fprintf(stderr, "CPXaddrows failed.\n");
-		initial_cuts[count_added].index = index;
-		count_added++;
-		initial_cuts[count_added].sense = (char*)calloc(1, sizeof(char));
-		initial_cuts[count_added].rhs = create_double_vector(1);
-		initial_cuts[count_added].beg = create_int_vector(1);
-		initial_cuts[count_added].ind = create_int_vector(NN * NN + 1);
-		initial_cuts[count_added].origval = create_double_vector(NN * NN);
-		initial_cuts[count_added].val = create_double_vector(NN * NN + 1);
-		//Solve again and if there is a different support, then find another feasible solution.
-	//EVALUATE:
-		//Define_Core_Point();
-		status = CPXlpopt(env, lp);
-		if (status) fprintf(stderr, "Failed to optimize LP.\n");
-		CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
-		printf("iter:%d LP bound: %.2f gap: %.2f viol: %.2f viol rel %.2f time:%.2f sec SP time: %.2f (%.2f per) \n", iter, value, (UpperBound - value) / UpperBound * 100, lhs, (-lhs / value) * 100, cputime, cputime_SP, cputime_SP / cputime * 100);
-		if (FlagHeuristic) {
-			if (CompareLPSupport(x) >= 2) {
-				printf("Started running Matheuristic\n");
-				status = Construct_Feasible_Solution(x, dj);
-				PopulateLPSupport(NULL);
-				printf("Finished running Matheuristic\n");
-			}
-		}
-		//Should there be a second round or not?
-		if (flag_added != 0 && (UpperBound - value) / UpperBound > epsilon_LP) {
-			terminate = 0;
-			old_objval = value;
-		}
-		else {
-			terminate = 1;
-		}
-		printf("Finished iteration %d.\n***************************************************\n", iter);
-	} while (terminate != 1);
-	end = clock();
-	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Root node LP bound: %.2f \n Root node Time: %.2f \n Num Benders cuts: %d \n  Num cover cuts: %d Num Fenchel cuts: %d \n", value, cputime, count_added, count_cover_cuts, count_Fenchel_cuts);
-	flag_fixed = 0;
-	count_o = 0;
-	for (k = 0; k < NN; k++) {
-		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.8) {
-			z_open[count_o].k = k;
-			z_open[count_o++].value = x[pos_z[k][k]];
-		}
-	}
-	qsort((ZVAL*)z_open, count_o, sizeof(z_open[0]), Comparevalue_zo);
-	count_c = 0;
-	for (k = 0; k < NN; k++) {
-		if (fixed_zero[k] == 0 && x[pos_z[k][k]] <= 0.2) {
-			z_closed[count_c].k = k;
-			z_closed[count_c++].value = f[k][0];
-		}
-	}
-	qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
-	if(vers!=4){														//Partial Enumeration phase part I: Try to permanently open a set of hubs
-		printf("Starting Partial Enumeration: \n");
-		cur_rows = CPXgetnumrows(env, lp);
-		for (k = 0; k < count_o; k++){  						// Temporarily fix z_kk = 0 to try to permantely open it (i.e. z_k = 1 from now on)
-			index = 0;
-			index1 = 0;
-			sense[index1] = 'E';
-			rhs[index1] = 0;
-			matbeg[index1++] = index;
-			matind[index] = pos_z[z_open[k].k][z_open[k].k];
-			matval[index++] = 1;
-			status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-			if (status) fprintf(stderr, "CPXaddrows failed.\n");
-			cur_rows++;
-			//	CPXwriteprob(env, lp, "BendersPE.lp", NULL);
-			status = CPXlpopt(env, lp);
-			if (status) fprintf(stderr, "Failed to optimize LP.\n");
-			CPXgetobjval(env, lp, &value);
-			if (status) fprintf(stderr, "Failed to getx LP.\n");
-			CPXdelrows(env, lp, cur_rows - 1, cur_rows - 1);
-			if (status) fprintf(stderr, "CPXdelrows failed.\n");
-			cur_rows--;
-			//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
-			if (value > UpperBound){
-				//printf("Fix z[%d] = 1 \n", z_open[k].k+1);
-				bind[0] = pos_z[z_open[k].k][z_open[k].k];
-				btype[0] = 'B';
-				realub[0] = 1;
-				CPXchgbds(env, lp, 1, bind, btype, realub);				
-				fixed_one[z_open[k].k] = 1;
-				if (status) fprintf(stderr, "CPXaddrows failed.\n");
-				count_fixed++;
-				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
-			}
-		}
-		printf("Ended phase fix 0\n Started phase fix 1\n");
-		//Partial Enumeration phase part II: Try to permanently close a set of hubs
-		//printf("we will look at %d hubs\n", count_c); getchar();
-		for (k = 0; k < count_c; k++){  						// Temporarily fix z_kk = 1 to try to permantely open it (i.e. z_k = 0 from now on)
-			index = 0;
-			index1 = 0;
-			sense[index1] = 'E';
-			rhs[index1] = 1;
-			matbeg[index1++] = index;
-			matind[index] = pos_z[z_closed[k].k][z_closed[k].k];
-			matval[index++] = 1;
-			status = CPXaddrows(env, lp, 0, index1, index, rhs, sense, matbeg, matind, matval, NULL, NULL);
-			if (status) fprintf(stderr, "CPXaddrows failed.\n");
-			cur_rows++;
-			//CPXwriteprob(env, lp, "BendersPE.lp", NULL);
-			status = CPXlpopt(env, lp);
-			if (status) fprintf(stderr, "Failed to optimize LP.\n");
-			CPXgetobjval(env, lp, &value);
-			if (status) fprintf(stderr, "Failed to getx LP.\n");
-			CPXdelrows(env, lp, cur_rows - 1, cur_rows - 1);
-			if (status) fprintf(stderr, "CPXdelrows failed.\n");
-			cur_rows--;
-			//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
-			if (value > UpperBound){
-				//printf("Fix z[%d] = 0 \n", z_closed[k].k+1);
-				fixed_zero[z_closed[k].k] = 1;
-				bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
-				btype[0] = 'U';
-				realub[0] = 0;
-				CPXchgbds(env, lp, 1, bind, btype, realub);
-				flag_fixed = 1;
-				count_fixed++;
-				for (i = 0; i < NN; i++) {
-					if (not_eligible_hub[i][z_closed[k].k] == 0) {
-						not_eligible_hub[i][z_closed[k].k] = 1;
-						//if(i==74)printf("Remove %d for hub %d from PE test\n", i, z_closed[k].k + 1);
-						eli_per_com[i]--;
-					}
-					else {
-						//if(i==74)printf("assigned %d for hub %d is already not eligible with value %d\n", i, z_closed[k].k+1, not_eligible_hub[i][z_closed[k].k]);
-					}
-				}				
-				//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
-			}
-		}
-		printf("Ended phase fix 1\n");
-		//printf("Node 74 has %d eligible hubs\n", eli_per_com[74]);
-		/*for (i = 0; i < NN; i++) {
-			if (not_eligible_hub[74][i] == 0) {
-				printf("Hub %d is the only eligible hub\n", i);
-			}
-		}*/
-		if (flag_fixed == 1) {
-			count_cand_hubs = 0;
-			for (k = 0; k < NN; k++) {
-				if (fixed_zero[k] == 0)
-					cand_hubs[count_cand_hubs++] = k;
-			}
-		}
-		Define_Core_Point();
-		printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
-	}
-	status = CPXlpopt(env, lp);
-	if (status) fprintf(stderr, "Failed to optimize LP.\n");
-	CPXgetobjval(env, lp, &value);
-	if (status) fprintf(stderr, "Failed to getx LP.\n");
-	end = clock();
-	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Root node LP bound after PE: %.2f \n PE Time: %.2f \n Hubs fixed: %d \n", value, cputime, count_fixed);
-	out = open_file(output_text, "a+");
-	fprintf(out, "%.2lf;%.2f;%.2f;%d;%d;", UpperBound, value, cputime,iter, count_fixed);
-	fclose(out);
-	free(matbeg);
-	free(matind);
-	free(matval);
-	free(sense);
-	free(rhs);
+	solve_as_LP(env, lp);
+
 	//Now solving the Integer Program
 	/******************************************************************************************/
 	SetBranchandCutParam(env, lp);
-	if (vers != 2) CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-	status = CPXcopyorder(env, lp, NN*NN, indices, priority, NULL);
 	cutinfo.lp = lp;
 	cutinfo.numcols = cur_numcols;
-	printf("Columns loaded in Cplex: %d \n", cur_numcols);
 	cutinfo.x = (double*)malloc(cur_numcols * sizeof(double));
-	if (cutinfo.x == NULL) {
-		fprintf(stderr, "No memory for solution values.\n");
-		goto TERMINATE;
+
+	printf("Columns loaded in Cplex: %d \n", cur_numcols);
+	// Activate the priority branching
+	if (vers != 2) {
+		CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
+		status = CPXcopyorder(env, lp, NN * NN, indices, priority, NULL);
 	}
 	/* Set up to use MIP callback */
 	status = CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo);
@@ -587,17 +155,17 @@ void Benders_root_node_heur(void)
 	d_vector(&values, cur_numcols, "open_cplex:7");
 	beg[0] = 0;
 	effortlevel[0] = 5;
-	for (i = 0; i < cur_numcols-1; i++) {
-		values[i] = (double) initial_x[i];
+	for (i = 0; i < cur_numcols - 1; i++) {
+		values[i] = (double)initial_x[i];
 		//values[i] = 0;
 		varindices[i] = i;
-	//	if (values[i] > 0.001)
-		//	printf("%.2f, %d \n", values[i], varindices[i]);
+		//	if (values[i] > 0.001)
+			//	printf("%.2f, %d \n", values[i], varindices[i]);
 	}
-	values[cur_numcols - 1] = (double) (UpperBound - eta_cost);
+	values[cur_numcols - 1] = (double)(UpperBound - eta_cost);
 	//values[cur_numcols - 1] = UpperBound;
 	varindices[cur_numcols - 1] = cur_numcols - 1;
-	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN*NN, UpperBound, eta_cost);
+	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN * NN, UpperBound, eta_cost);
 	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
 	printf("status: %d \n", status);
 	free(beg);
@@ -614,8 +182,7 @@ void Benders_root_node_heur(void)
 		printf("Time limit reached\n");
 	else
 		printf("Unknown stopping criterion (%d)\n", i);
-	// out = open_file("result_CHLP_3index.txt","a+");
-	// retrive solution values
+
 	CPXgetmipobjval(env, lp, &value);
 	printf("Upper bound: %f   ", value);
 	best_upper_bound = value;
@@ -634,7 +201,7 @@ void Benders_root_node_heur(void)
 	CPXgetmipx(env, lp, x, 0, cur_numcols - 1);  // obtain the values of the decision variables
 	index = 0;
 	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound,  cputime, (best_upper_bound-best_lower_bound)*100/ best_upper_bound, nodecount);
+	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound, cputime, (best_upper_bound - best_lower_bound) * 100 / best_upper_bound, nodecount);
 	printf("Optimal set of hubs: ");
 	fprintf(out, "hubs:");
 	for (i = 0; i < NN; i++) {
@@ -648,28 +215,27 @@ void Benders_root_node_heur(void)
 	fclose(out);
 TERMINATE:
 	/* Free the allocated vectors */
-	free_and_null((char**)& cutinfo.x);
-	free_and_null((char**)& cutinfo.beg);
-	free_and_null((char**)& cutinfo.ind);
-	free_and_null((char**)& cutinfo.val);
-	free_and_null((char**)& cutinfo.rhs);
-    if ( lp != NULL ) {
-      status = CPXfreeprob (env, &lp);
-      if ( status ) {
-        fprintf (stderr, "CPXfreeprob failed, error code %d.\n", status);
-      }
+	free_and_null((char**)&cutinfo.x);
+	free_and_null((char**)&cutinfo.beg);
+	free_and_null((char**)&cutinfo.ind);
+	free_and_null((char**)&cutinfo.val);
+	free_and_null((char**)&cutinfo.rhs);
+	if (lp != NULL) {
+		status = CPXfreeprob(env, &lp);
+		if (status) {
+			fprintf(stderr, "CPXfreeprob failed, error code %d.\n", status);
+		}
 	}
-    if ( env != NULL ) {
-       status = CPXcloseCPLEX (&env);
-       if ( status ) {
-         char  errmsg[1024];
-         fprintf (stderr, "Could not close CPLEX environment.\n");
-         CPXgeterrorstring (env, status, errmsg);
-         fprintf (stderr, "%s", errmsg);
-       }
+	if (env != NULL) {
+		status = CPXcloseCPLEX(&env);
+		if (status) {
+			char  errmsg[1024];
+			fprintf(stderr, "Could not close CPLEX environment.\n");
+			CPXgeterrorstring(env, status, errmsg);
+			fprintf(stderr, "%s", errmsg);
+		}
 	}
 	free(x);
-	free(dj);
 	free(cand_cover);
 	free(z_open);
 	free(z_closed);
@@ -1402,3 +968,466 @@ TERMINATE:
 	free(bestx);
 	return (0);
 } /* END Lagrange_Heur */
+
+double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
+	int numcols; // number of variables ..........................................
+	int numrows; // number of constraints.........................................
+	double* dj;
+	double value;
+	double* x;
+	int count_c;
+	int count_fixed, total_assign_fixed, assign_fixed, flag_fixed, status;
+	int i, k, flag_added;
+	int	iter;
+	double   epsilon_LP;
+	epsilon_LP = 0.005;
+	int terminate=0;
+	clock_t start, end;
+	double cputime;
+	FILE* out;
+	
+
+	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
+	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
+	CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
+	CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);
+
+
+	//Initialize the counters of variables that were fixed
+	iter = 0;
+	count_fixed = 0;
+	total_assign_fixed = 0;
+	assign_fixed = 0;
+	flag_fixed = 0;
+
+	numrows = CPXgetnumrows(env, lp);
+	numcols = CPXgetnumcols(env, lp);
+	dj = create_double_vector(numcols);
+	x = create_double_vector(numcols);
+
+	start = clock();
+	//Solve the LP relaxation for the first time
+	if (CPXlpopt(env, lp)){
+		printf("Failed to optimize LP.\n");
+		exit(2);
+	}
+	CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+	printf("Initial LP bound: %.2lf\n", value);
+	
+	//Run heuristc using info from fractional solution x
+	if (FlagHeuristic) {
+		PopulateLPSupport(x);
+		printf("Started solving heuristic\n");
+		status = Construct_Feasible_Solution(x, dj);
+		printf("Finished solving heuristic.\n");
+	}
+	//Cutting plane algorithm for solving the root node
+	do {
+		// Execute variable elimination where we check with the reduced cost, lp bound, and upper bound
+		reduced_cost_var_elimination(env, lp, value, dj, &count_fixed, &total_assign_fixed, &flag_fixed, &assign_fixed);
+
+		//Partial Enumeration phase: solve LPs to try to remove potential locations
+		if (((UpperBound - value) / UpperBound * 100 < 1.0 && flag_fixed >= 0)) {
+			flag_fixed += partial_enumeration(env, lp, x, value, dj, &count_fixed, 1, 0); //Only try to fix to 0
+		}
+
+		// If at some point we fixed variables, redefine the corepoint and calculate new LP bound
+		if (flag_fixed == 1 || assign_fixed > 0) {
+			Define_Core_Point();
+			if (CPXlpopt(env, lp)) {
+				printf("Failed to optimize LP.\n");
+				exit(1);
+			}
+			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+		}
+		
+		// Solve the subproblem
+		iter++;
+		flag_added = solve_Benders_subproblem(env, lp, x, value);
+
+		// If a violated cut is found, then solve the LP again
+		if (flag_added) {
+			status = CPXlpopt(env, lp);
+			if (status) {
+				printf("Failed to optimize LP.\n");
+				exit(1);
+			}
+			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+		}
+		printf("iter:%d LP bound: %.2f gap: %.2f  \n", iter, value, (UpperBound - value) / UpperBound * 100);
+
+		//If we're using the heuristic then try to find a better solution
+		if (FlagHeuristic) {
+			if (CompareLPSupport(x) >= 2) {
+				printf("Started running Matheuristic\n");
+				status = Construct_Feasible_Solution(x, dj);
+				PopulateLPSupport(NULL);
+				printf("Finished running Matheuristic\n");
+			}
+		}
+
+		//Should there be a second round or not?
+		if (flag_added != 0 && (UpperBound - value) / UpperBound > epsilon_LP) {
+			terminate = 0;
+			old_objval = value;
+		}
+		else {
+			terminate = 1;
+		}
+		printf("Finished iteration %d.\n***************************************************\n", iter);
+	} while (terminate != 1);
+	end = clock();
+	cputime = (double)(end - start) / CLOCKS_PER_SEC;
+	printf("Root node LP bound: %.2f \n Root node Time: %.2f \n Num Benders cuts: %d\n", value, cputime, count_added);
+	
+	//Partial Enumeration phase part I: Again try to permanently open or close a set of hubs
+	if (vers != 4) {														
+		flag_fixed = partial_enumeration(env, lp, x, value, dj, &count_fixed, 1, 1); //This time try both to fix to 1 and to fix to 0
+		if (flag_fixed == 1) {
+			count_cand_hubs = 0;
+			for (k = 0; k < NN; k++) {
+				if (fixed_zero[k] == 0)
+					cand_hubs[count_cand_hubs++] = k;
+			}
+		}
+		Define_Core_Point();
+		printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
+	}
+	status = CPXlpopt(env, lp);
+	if (status) fprintf(stderr, "Failed to optimize LP.\n");
+	CPXgetobjval(env, lp, &value);
+	if (status) fprintf(stderr, "Failed to getx LP.\n");
+	end = clock();
+	cputime = (double)(end - start) / CLOCKS_PER_SEC;
+	printf("Root node LP bound after PE: %.2f \n PE Time: %.2f \n Hubs fixed: %d \n", value, cputime, count_fixed);
+	out = open_file(output_text, "a+");
+	fprintf(out, "%.2lf;%.2f;%.2f;%d;%d;", UpperBound, value, cputime, iter, count_fixed);
+	fclose(out);
+	return value;
+}
+
+int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, double *dj, int * count_fixed, int * total_assign_fixed, int * flag_fixed,  int *assign_fixed ) {
+	int status;
+	int i, k;
+
+	//For the bound changes
+	char* btype;
+	int* bind;
+	double* realub;
+	i_vector(&bind, 1, "open_cplex:4");
+	c_vector(&btype, 1, "open_cplex:3");
+	d_vector(&realub, 1, "open_cplex:3");
+	realub[0] = 0;
+	btype[0] = 'U';
+	
+	//Simple variable fixing test with reduced cost coefficients
+	printf("Starting elimination test\n");
+	
+	if (vers != 5) {
+		for (i = 0; i < count_cand_hubs; i++) {
+			if (value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]] > UpperBound + 0.01) {
+				//printf("Fix z[%d] = 0  obj+redcost:%.5f  UB:%.5f \n", cand_hubs[i] + 1, value + dj[pos_z[cand_hubs[i]][cand_hubs[i]]], UpperBound);
+				fixed_zero[cand_hubs[i]] = 1;
+				bind[0] = pos_z[cand_hubs[i]][cand_hubs[i]];
+				realub[0] = 0;
+				btype[0] = 'U';
+				status = CPXchgbds(env, lp, 1, bind, btype, realub);
+				if (status) fprintf(stderr, "CPXchange bounds failed.\n");
+				*count_fixed=*count_fixed+1;
+				*flag_fixed = 1;
+				not_eligible_hub[cand_hubs[i]][cand_hubs[i]] = 1;
+				eli_per_com[cand_hubs[i]]--;
+				for (k = 0; k < NN; k++) {
+					if (not_eligible_hub[k][cand_hubs[i]] == 0) {
+						bind[0] = pos_z[k][cand_hubs[i]];
+						realub[0] = 0;
+						btype[0] = 'U';
+						status = CPXchgbds(env, lp, 1, bind, btype, realub);
+						not_eligible_hub[k][cand_hubs[i]] = 1;
+						eli_per_com[k]--;
+						*assign_fixed=*assign_fixed +1;
+					}
+				}
+			}
+			else {
+				for (k = 0; k < NN; k++) {
+					if (not_eligible_hub[k][cand_hubs[i]] == 0 && value + dj[pos_z[k][cand_hubs[i]]] > UpperBound + 0.01) {
+						*assign_fixed=*assign_fixed+1;
+						bind[0] = pos_z[k][cand_hubs[i]];
+						realub[0] = 0;
+						btype[0] = 'U';
+						CPXchgbds(env, lp, 1, bind, btype, realub);
+						not_eligible_hub[k][cand_hubs[i]] = 1;
+						eli_per_com[k]--;
+					}
+				}
+			}
+		}
+		if (*assign_fixed > 0) {
+			*total_assign_fixed += *assign_fixed;			
+			printf("Fixed %d assig variables in current iter, total fixed %d, (%.2f percentage) \n", *assign_fixed, *total_assign_fixed, (float)(*total_assign_fixed) / (NN * NN) * 100);
+		}
+		if (*flag_fixed == 1) { //If I fixed to 0 some hubs
+			count_cand_hubs = 0;
+			for (k = 0; k < NN; k++) {
+				if (fixed_zero[k] == 0)
+					cand_hubs[count_cand_hubs++] = k;
+			}
+			printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+		}
+	}
+	printf("Finished elimination test.\n");
+}
+
+int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double value) {
+	int	flag_added;
+	double tolerance_sep;
+	clock_t start_SP, end_SP;
+	int index, index1, status;
+	int i, j,k;
+	double lhs, coeff_z;
+
+	//Solve the primal subproblem to find Benders cuts
+	start_SP = clock();
+	
+	flag_added = 0;
+	index = 0;
+	index1 = 0;
+	tolerance_sep = 0.50;
+	printf("Starting to separate Benders cuts\n");
+	if (vers != 3) {
+		Define_Core_Point();
+		Update_Core_Point(x);
+	}
+	for (i = 0; i < NN - 1; i++) {
+		for (j = i + 1; j < NN; j++) {	
+			status = NetFlow_TP(x, i, j);
+		}
+	}
+	printf("Finished separating Benders cuts.");
+	initial_cuts[0].sense[index1] = 'G';
+	initial_cuts[0].rhs[index1] = 0;
+	initial_cuts[0].beg[index1++] = index;
+	initial_cuts[0].ind[index] = pos_eta;
+	initial_cuts[0].val[index++] = 1;
+	lhs = x[pos_eta];
+	// printf("eta >= ");
+	for (i = 0; i < NN; i++) {
+		if (fixed_zero[i] == 0) {
+			for (k = 0; k < NN; k++) {
+				if (fixed_zero[k] == 0) {
+					coeff_z = 0;
+					for (j = 0; j < NN; j++)
+						coeff_z += (-alpha[i][j][k] - beta[j][i][k]);
+					if (ABS(coeff_z) > 0.00001) {
+						initial_cuts[0].ind[index] = pos_z[i][k];
+						initial_cuts[0].val[index++] = coeff_z;
+						initial_cuts[0].origval[pos_z[i][k]] = coeff_z;
+						lhs += coeff_z * x[pos_z[i][k]];
+					}
+				}
+			}
+		}
+		else {
+			for (k = 0; k < NN; k++) {
+				if (i != k && fixed_zero[k] == 0) {
+					coeff_z = 0;
+					for (j = 0; j < NN; j++)
+						coeff_z += (-alpha[i][j][k] - beta[j][i][k]);
+					if (ABS(coeff_z) > 0.00001) {
+						initial_cuts[0].ind[index] = pos_z[i][k];
+						initial_cuts[0].val[index++] = coeff_z;
+						initial_cuts[0].origval[pos_z[i][k]] = coeff_z;
+						lhs += coeff_z * x[pos_z[i][k]];
+						//if (x[pos_z[i][k]] > 0.00001)
+						 //   printf("%.2f z[%d][%d] + ", coeff_z, i + 1, k + 1);
+					}
+					else initial_cuts[0].origval[pos_z[i][k]] = 0;
+				}
+			}
+		}
+	}
+	//  printf("\n");
+	end_SP = clock();
+	if ((-lhs / value) * 100 < tolerance_sep && ((UpperBound - value) / UpperBound) * 100 < 10.0) {
+		flag_added = 0;
+	}
+	else flag_added = 1;
+	
+	if (lhs > -0.001)
+		flag_added = 0;
+
+	if (flag_added) {
+		status = CPXaddrows(env, lp, 0, index1, index, initial_cuts[0].rhs, initial_cuts[0].sense, initial_cuts[0].beg, initial_cuts[0].ind, initial_cuts[0].val, NULL, NULL);
+		count_added++;
+		if (status) {
+			printf("Unable to add Benders cut.\n");
+			exit(3);
+		}
+	}
+	
+	return flag_added;
+}
+
+int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* dj, int* count_fixed) {
+	int count_c, k, flag_fixed, status;
+	int i;
+	//For the bound changes
+	char* btype;
+	int* bind;
+	double* realub;
+	double valuef;
+	i_vector(&bind, 1, "open_cplex:4");
+	c_vector(&btype, 1, "open_cplex:3");
+	d_vector(&realub, 1, "open_cplex:3");
+
+	// Identify potential hubs with a small lp optimal solution value to temporarily fix to 1 to test.
+	count_c = 0;
+	for (k = 0; k < count_cand_hubs; k++) {
+		if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
+			z_closed[count_c].k = cand_hubs[k];
+			z_closed[count_c].value = f[cand_hubs[k]][0] * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
+			for (i = 0; i < NN; i++) {
+				z_closed[count_c].value += (O[i] * c_c[i][cand_hubs[k]] + D[i] * c_d[i][cand_hubs[k]]) * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
+			}
+			count_c++;
+		}
+	}
+	printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 0. \n", count_c);
+	flag_fixed = 0; 
+	//qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
+	// 
+	for (k = 0; k < count_c; k++) {  			
+		// Temporarily fix z_kk = 1 to try to permantely close it (i.e. z_k = 0 from now on)
+		bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
+		realub[0] = 1;
+		btype[0] = 'L';
+		CPXchgbds(env, lp, 1, bind, btype, realub);
+		if (CPXlpopt(env, lp)) {
+			printf("Failed to optimize LP.\n");
+			exit(2);
+		}
+		if (CPXgetobjval(env, lp, &valuef)) {
+			printf( "Failed to getx LP.\n");
+			exit(2);
+		}
+		
+		//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
+		if (valuef > UpperBound) {
+			//printf("Fixed z[%d] = 0, NLB/UB: %.3f, (NLB - LB + RC)/UB: %.3f \n", z_closed[k].k + 1, valuef / UpperBound, (valuef - value + dj[pos_z[cand_hubs[k]][cand_hubs[k]]]) / UpperBound);
+			fixed_zero[z_closed[k].k] = 1;
+			bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
+			realub[0] = 0;
+			btype[0] = 'U';
+			CPXchgbds(env, lp, 1, bind, btype, realub);
+			*count_fixed = *count_fixed + 1;
+			
+			flag_fixed = 1;
+			for (i = 0; i < NN; i++) {
+				if (not_eligible_hub[i][z_closed[k].k] == 0) {
+					not_eligible_hub[i][z_closed[k].k] = 1;
+					eli_per_com[i]--;
+				}
+			}
+			//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
+		}
+
+		// Return to the normal value as before
+		bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
+		realub[0] = 0;
+		btype[0] = 'L';
+		CPXchgbds(env, lp, 1, bind, btype, realub);
+	}
+	if (flag_fixed == 1) {
+		count_cand_hubs = 0;
+		for (k = 0; k < NN; k++) {
+			if (fixed_zero[k] == 0)
+				cand_hubs[count_cand_hubs++] = k;
+		}
+		printf("Partial enumeration fix to 0 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+	}
+
+	free(bind);
+	free(btype);
+	free(realub);
+
+	return flag_fixed;
+}
+
+int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed) {
+	int count_o, k, flag_fixed;
+	//For the bound changes
+	char* btype;
+	int* bind;
+	double* realub;
+	double valuef;
+
+	i_vector(&bind, 1, "open_cplex:4");
+	c_vector(&btype, 1, "open_cplex:3");
+	d_vector(&realub, 1, "open_cplex:3");
+	count_o = 0;
+	for (k = 0; k < NN; k++) {
+		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.8) {
+			z_open[count_o].k = k;
+			z_open[count_o++].value = x[pos_z[k][k]];
+		}
+	}
+	
+	printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 1. \n", count_o);
+	flag_fixed = 0;
+	for (k = 0; k < count_o; k++) {  						// Temporarily fix z_kk = 0 to try to permantely open it (i.e. z_k = 1 from now on)
+		// Temporarily fix z_kk = 0 to try to permantely open it (i.e. z_k = 1 from now on)
+		// Temporarily fix to 0
+		bind[0] = pos_z[z_open[k].k][z_open[k].k];
+		realub[0] = 0;
+		btype[0] = 'U';
+		CPXchgbds(env, lp, 1, bind, btype, realub);		
+		if (CPXlpopt(env, lp)) {
+			printf("Failed to optimize LP.\n");
+			exit(2);
+		}
+		if (CPXgetobjval(env, lp, &valuef)) {
+			printf("Failed to getx LP.\n");
+			exit(2);
+		}
+		if (value > UpperBound) {
+			//printf("Fix z[%d] = 1 \n", z_open[k].k+1);
+			bind[0] = pos_z[z_open[k].k][z_open[k].k];
+			btype[0] = 'L';
+			realub[0] = 1;
+			CPXchgbds(env, lp, 1, bind, btype, realub);
+			fixed_one[z_open[k].k] = 1;
+			*count_fixed=*count_fixed +1;
+			//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
+		}
+		//return to the previous value
+		bind[0] = pos_z[z_open[k].k][z_open[k].k];
+		realub[0] = 1;
+		btype[0] = 'U';
+		CPXchgbds(env, lp, 1, bind, btype, realub);
+	}
+	printf("Finished partial enumeration phase\n");
+	if (flag_fixed == 1) {
+		count_cand_hubs = 0;
+		for (k = 0; k < NN; k++) {
+			if (fixed_zero[k] == 0)
+				cand_hubs[count_cand_hubs++] = k;
+		}
+		printf("Partial enumeration fix to 1 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+	}
+
+	free(bind);
+	free(btype);
+	free(realub);
+
+	return flag_fixed;
+}
+
+int partial_enumeration(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed, int flag_fix_to_zero, int flag_fix_to_one) { //Need to confirm if we still need to send aguments like the count_fixed with a &
+	int flag_added = 0;
+	if (flag_fix_to_zero) flag_added+=pe_fix_to_zero(env, lp, x, value, dj, count_fixed);
+
+	if (flag_fix_to_one) flag_added += pe_fix_to_one(env, lp, x, value, dj, count_fixed);
+
+	return flag_added;
+}

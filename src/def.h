@@ -127,6 +127,12 @@ char** create_stringarray(int n, int m);
 void	free_stringarray(char*** ptr, int n);
 void	free_char_vector(char** ptr);
 int		add_assignment_constr(CPXENVptr env, CPXLPptr lp);
+int		reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, double* dj, int* count_fixed, int* total_assign_fixed, int* flag_fixed, int* assign_fixed);
+int		pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed);
+int		pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed);
+int		partial_enumeration(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed, int flag_fix_to_zero, int flag_fix_to_one);
+int		solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double* x, double value);
+double  solve_as_LP(CPXENVptr env, CPXLPptr lp);
 
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	
