@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
 		 read_instance(instance, 5 - 4 * APset, coll, trans, distr, APset);
 		 printf(" %s  alpha= %0.2f \n", instance, trans);
 		 //Obtain initial solution from a SSCFLP
-		 start = clock();
 		 UpperBound = MAX_DOUBLE;
 		 // if(vers!=0) SSCFLP_model();
 		 // if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
@@ -68,6 +67,7 @@ int main(int argc, char* argv[])
 		 fprintf(out, "%d;%s;%d;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid, totalFlag);
 		 fclose(out);
 		 //Solve root node
+		 start = clock();
 		 Benders_root_node_heur();
 		 end = clock();
 		 cputime = (double)(end - start) / CLOCKS_PER_SEC;

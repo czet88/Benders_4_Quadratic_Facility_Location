@@ -13,8 +13,8 @@
 #define rand_double()(rand()/(double) RAND_MAX)
 #define MAX_DOUBLE  10000000000
 // Tolerances that we keep for the LP bounds
-#define epsilon_LP_Pre 0.005
-#define epsilon_LP_BB 0.5
+#define epsilon_LP_Pre  0.0005;
+#define epsilon_LP_BB  0.5;
 
 struct cutinfo {
    CPXLPptr lp;

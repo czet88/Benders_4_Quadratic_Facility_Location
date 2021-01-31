@@ -1087,7 +1087,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		if (flag_fixed == 1) {
 			count_cand_hubs = 0;
 			for (k = 0; k < NN; k++) {
-				if (fixed_zero[k] == 0)
+				if (fixed_zero[k] == 0 && fixed_one[k]==0)
 					cand_hubs[count_cand_hubs++] = k;
 			}
 		}
@@ -1122,7 +1122,7 @@ int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, doubl
 	btype[0] = 'U';
 	
 	//Simple variable fixing test with reduced cost coefficients
-	printf("Starting elimination test\n");
+	printf("Starting reduced cost elimination test\n");
 	
 	if (vers != 5) {
 		for (i = 0; i < count_cand_hubs; i++) {
@@ -1285,19 +1285,15 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 	// Identify potential hubs with a small lp optimal solution value to temporarily fix to 1 to test.
 	count_c = 0;
 	for (k = 0; k < count_cand_hubs; k++) {
-		if (fixed_zero[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
+		if (fixed_zero[cand_hubs[k]] == 0 && fixed_one[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] <= 0.2) {
 			z_closed[count_c].k = cand_hubs[k];
 			z_closed[count_c].value = f[cand_hubs[k]][0] * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-			for (i = 0; i < NN; i++) {
-				z_closed[count_c].value += (O[i] * c_c[i][cand_hubs[k]] + D[i] * c_d[i][cand_hubs[k]]) * (1 - x[pos_z[cand_hubs[k]][cand_hubs[k]]]);
-			}
 			count_c++;
 		}
 	}
 	printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 0. \n", count_c);
 	flag_fixed = 0; 
-	//qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc);
-	// 
+	//qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc); 
 	for (k = 0; k < count_c; k++) {  			
 		// Temporarily fix z_kk = 1 to try to permantely close it (i.e. z_k = 0 from now on)
 		bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
@@ -1367,8 +1363,8 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 	c_vector(&btype, 1, "open_cplex:3");
 	d_vector(&realub, 1, "open_cplex:3");
 	count_o = 0;
-	for (k = 0; k < NN; k++) {
-		if (fixed_zero[k] == 0 && x[pos_z[k][k]] > 0.8) {
+	for (k = 0; k < count_cand_hubs; k++) {
+		if (fixed_zero[cand_hubs[k]] == 0 && fixed_one[cand_hubs[k]] == 0 && x[pos_z[cand_hubs[k]][cand_hubs[k]]] > 0.8) {
 			z_open[count_o].k = k;
 			z_open[count_o++].value = x[pos_z[k][k]];
 		}
@@ -1387,6 +1383,9 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 			printf("Failed to optimize LP.\n");
 			exit(2);
 		}
+		else {
+			printf("Solve status is %d\n", CPXgetstat(env, lp));
+		}
 		if (CPXgetobjval(env, lp, &valuef)) {
 			printf("Failed to getx LP.\n");
 			exit(2);
@@ -1399,7 +1398,6 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 			CPXchgbds(env, lp, 1, bind, btype, realub);
 			fixed_one[z_open[k].k] = 1;
 			*count_fixed=*count_fixed +1;
-			//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 		}
 		//return to the previous value
 		bind[0] = pos_z[z_open[k].k][z_open[k].k];

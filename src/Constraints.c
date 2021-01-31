@@ -39,7 +39,7 @@ int add_variables(CPXENVptr env, CPXLPptr lp) {
 			indices[index1] = index1;
 			globvarind[index1] = index1;
 			globvarctype[index1] = 'B';
-			sprintf(varname[index1], "z_(%d)(%d", i + 1, k +1);
+			sprintf(varname[index1], "z_(%d)(%d)", i + 1, k +1);
 			index1++;
 		}
 	}
@@ -47,11 +47,12 @@ int add_variables(CPXENVptr env, CPXLPptr lp) {
 	globvarind[index1] = index1;
 	globvarctype[index1] = 'C';
 	pos_eta =index1;
+	sprintf(varname[index1], "eta", i + 1, k + 1);
 	obj[index1] = 1;
 	lb[index1] = 0;
 	ub[index1] = CPX_INFBOUND;
 	index1++;
-	status = CPXnewcols(env, lp, index1, obj, lb, ub, NULL, NULL);
+	status = CPXnewcols(env, lp, index1, obj, lb, ub, NULL, varname);
 	free_stringarray(&varname, numcols);
 	if (status)
 		fprintf(stderr, "CPXnewcols failed.\n");
