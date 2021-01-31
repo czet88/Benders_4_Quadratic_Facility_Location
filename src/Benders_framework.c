@@ -240,7 +240,7 @@ int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp) {	//Here we will set the br
 	CPXsetdblparam(env, CPX_PARAM_CUTUP, UpperBound + 0.001); // provide an initial upper bound
 	CPXsetintparam(env, CPX_PARAM_MIPEMPHASIS, CPX_MIPEMPHASIS_OPTIMALITY);  // MIP emphasis: optimality, feasibility, moving best bound
 	//CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 2000); // time limit
+	CPXsetdblparam(env, CPX_PARAM_TILIM, timelimit); // time limit
 	//CPXsetdblparam(env, CPX_PARAM_TRELIM, 14000); // B&B memory limit
 	CPXsetdblparam(env, CPX_PARAM_EPGAP, 0.0000001); // e-optimal solution (%gap)
 											  //CPXsetdblparam(env, CPX_PARAM_CUTSFACTOR, 1.0); // add cuts or not
