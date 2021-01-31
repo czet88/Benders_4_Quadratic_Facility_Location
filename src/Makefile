@@ -10,7 +10,7 @@ Benders_framework.o : Benders_framework.c def.h
 	$(CXX) -c Benders_framework.c $< $(LIB2)
 main.o : main.c def.h 
 	$(CXX) -c main.c $< $(LIB2)
-Matheuristic.o : Matheuristic.c def.h 
+Matheuristic.o : Matheuristic.c def.h
 	$(CXX) -c Matheuristic.c $< $(LIB2)
 Model_info.o : Model_info.c def.h
 	$(CXX) -c Model_info.c $< $(LIB2)
