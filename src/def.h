@@ -129,6 +129,7 @@ int		pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* 
 int		partial_enumeration(CPXENVptr env, CPXLPptr lp, double* x, double value, double* dj, int* count_fixed, int flag_fix_to_zero, int flag_fix_to_one);
 int		solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double* x, double value);
 double  solve_as_LP(CPXENVptr env, CPXLPptr lp);
+int		set_mip_start(CPXENVptr env, CPXLPptr lp, int cur_numcols);
 
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	

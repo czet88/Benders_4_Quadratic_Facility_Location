@@ -26,8 +26,7 @@ void Benders_root_node_heur(void)
 	int count_cover_cuts = 0;
 	int count_Fenchel_cuts = 0;
 	int total_assign_fixed;
-	int* beg, * varindices, * effortlevel;
-	double* values;
+	
 	int cur_numcols;
 	clock_t  start, end;
 
@@ -125,53 +124,13 @@ void Benders_root_node_heur(void)
 		CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
 		status = CPXcopyorder(env, lp, NN * NN, indices, priority, NULL);
 	}
-	/* Set up to use MIP callback */
-	status = CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo);
-	if (status)  goto TERMINATE;
-	status = CPXsetlazyconstraintcallbackfunc(env, mycutcallback, &cutinfo);
-	if (status)  goto TERMINATE;
-	/* Code to use Heuristic Callback*/
-  /************************************************/
-	status = CPXsetheuristiccallbackfunc(env, Heur, NULL);
-	// Add best solution from Matheuristic to MIP
-	index = 0;
-	eta_cost = 0;
-	for (i = 0; i < NN; i++) {
-		for (k = 0; k < NN; k++) {
-			if (best_sol_assignments[i] == k) {
-				initial_x[index++] = 1;
-				if (i == k)
-					eta_cost += f[i][0];
-				else
-					eta_cost += (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
-			}
-			else
-				initial_x[index++] = 0;
-		}
-	}
-	i_vector(&beg, 1, "open_cplex:4");
-	i_vector(&effortlevel, 1, "open_cplex:4");
-	i_vector(&varindices, cur_numcols, "open_cplex:6");
-	d_vector(&values, cur_numcols, "open_cplex:7");
-	beg[0] = 0;
-	effortlevel[0] = 5;
-	for (i = 0; i < cur_numcols - 1; i++) {
-		values[i] = (double)initial_x[i];
-		//values[i] = 0;
-		varindices[i] = i;
-		//	if (values[i] > 0.001)
-			//	printf("%.2f, %d \n", values[i], varindices[i]);
-	}
-	values[cur_numcols - 1] = (double)(UpperBound - eta_cost);
-	//values[cur_numcols - 1] = UpperBound;
-	varindices[cur_numcols - 1] = cur_numcols - 1;
-	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN * NN, UpperBound, eta_cost);
-	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
-	printf("status: %d \n", status);
-	free(beg);
-	free(effortlevel);
-	free(varindices);
-	free(values);
+	/* Set up to use MIP callbacks */
+	if (CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo)) goto TERMINATE;
+	if (CPXsetlazyconstraintcallbackfunc(env, mycutcallback, &cutinfo)) goto TERMINATE;
+	if (CPXsetheuristiccallbackfunc(env, Heur, NULL)) goto TERMINATE;
+	if (set_mip_start(env, lp, cur_numcols)) goto TERMINATE;
+	
+	//Solve the problem
 	CPXmipopt(env, lp);  //solve the integer program
 	i = CPXgetstat(env, lp);
 	if (i == 101)
@@ -194,7 +153,7 @@ void Benders_root_node_heur(void)
 	printf("Lower bound: %f   ", value);
 	nodecount = CPXgetnodecnt(env, lp);
 	printf(" the number of BB nodes : %ld   ", nodecount);
-	//add one line of code I will give you
+
 	end = clock();
 	cputime = (double)(end - start) / CLOCKS_PER_SEC;
 	printf("Bender's Time: %.2f \n", cputime);
@@ -1429,4 +1388,53 @@ int partial_enumeration(CPXENVptr env, CPXLPptr lp, double* x, double value, dou
 	if (flag_fix_to_one) flag_added += pe_fix_to_one(env, lp, x, value, dj, count_fixed);
 
 	return flag_added;
+}
+
+int set_mip_start(CPXENVptr env, CPXLPptr lp, int cur_numcols) {
+	
+	int* beg, * varindices, * effortlevel;
+	double* values;
+	int index,i,k, status;
+	double eta_cost;
+
+	// Add best solution from Matheuristic to MIP
+	index = 0;
+	eta_cost = 0;
+	for (i = 0; i < NN; i++) {
+		for (k = 0; k < NN; k++) {
+			if (best_sol_assignments[i] == k) {
+				initial_x[index++] = 1;
+				if (i == k)
+					eta_cost += f[i][0];
+				else
+					eta_cost += (O[i] * c_c[i][k] + D[i] * c_d[i][k]);
+			}
+			else
+				initial_x[index++] = 0;
+		}
+	}
+	i_vector(&beg, 1, "open_cplex:4");
+	i_vector(&effortlevel, 1, "open_cplex:4");
+	i_vector(&varindices, cur_numcols, "open_cplex:6");
+	d_vector(&values, cur_numcols, "open_cplex:7");
+	beg[0] = 0;
+	effortlevel[0] = 5;
+	for (i = 0; i < cur_numcols - 1; i++) {
+		values[i] = (double)initial_x[i];
+		//values[i] = 0;
+		varindices[i] = i;
+		//	if (values[i] > 0.001)
+			//	printf("%.2f, %d \n", values[i], varindices[i]);
+	}
+	values[cur_numcols - 1] = (double)(UpperBound - eta_cost);
+	//values[cur_numcols - 1] = UpperBound;
+	varindices[cur_numcols - 1] = cur_numcols - 1;
+	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN * NN, UpperBound, eta_cost);
+	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
+	printf("status: %d \n", status);
+	free(beg);
+	free(effortlevel);
+	free(varindices);
+	free(values);
+	return status;
 }
