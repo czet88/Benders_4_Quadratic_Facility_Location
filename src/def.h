@@ -185,7 +185,7 @@ void read_heur_cl_param(const char*);
  void Check_CP_MW(double *z_sol,int i, int j);
  int clients_shift_red(int *, int *, double *, double *);
  int clients_swap_red(int *, int *, double *, double *);
- void Benders_root_node_heur(void);
+ void Benders_framework(void);
  int Construct_Feasible_Solution(double *, double *);
  int CFLP_reduced_model(int, ZVAL *, int *, int *);
  int Reassign_nodes_red(int *, int *);

@@ -1,6 +1,6 @@
 #include "def.h"
 
-void Benders_root_node_heur(void)
+void Benders_framework(void)
 {
 	int i, j, k, l, m, count;
 	int index, index1, index11;  // indices auxiliares para rellenar las matrices

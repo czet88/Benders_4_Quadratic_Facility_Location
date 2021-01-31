@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 		 fclose(out);
 		 //Solve root node
 		 start = clock();
-		 Benders_root_node_heur();
+		 Benders_framework();
 		 end = clock();
 		 cputime = (double)(end - start) / CLOCKS_PER_SEC;
 		 printf("\nFInal CPU time: %.2lf\n", cputime);
