@@ -2,64 +2,31 @@
 
 void Benders_framework(void)
 {
-	int i, j, k, l, m, count;
-	int index, index1, index11;  // indices auxiliares para rellenar las matrices
-	double   cputime, cputime_SP;
 	//Variables to call cplex
 	CPXLPptr  lp;      // data strucutre to store a problem in cplex ...................
 	CPXENVptr env;     // cplex environment.............................................
 	int       status;  // optimization status......................... .................
 	double* x;      // solution vector (double, even if the problem is integer) .....
-	FILE* out;
 	char probname[16]; // problem name for cplex .......................................
 	int		nodecount;
-	double    value;   // objevtive value of solution ..................................
-
 	double best_upper_bound;
 	double best_lower_bound;
-	double   tolerance_sep, tol_sep_cover;
-	int* cand_cover;
 	double   EPSOBJ = 0.1;
-	
 	double   eta_cost = 0;
-	
-	int count_cover_cuts = 0;
-	int count_Fenchel_cuts = 0;
-	int total_assign_fixed;
-	
 	int cur_numcols;
-	clock_t  start, end;
-
+	clock_t  start;
 	CUTINFO cutinfo;
-	cutinfo.x = NULL;
-	cutinfo.beg = NULL;
-	cutinfo.ind = NULL;
-	cutinfo.val = NULL;
-	cutinfo.rhs = NULL;
 
-	//For the bound changes
-	char* btype;
-	int* bind;
-	double* realub;
-	i_vector(&bind, 1, "open_cplex:4");
-	c_vector(&btype, 1, "open_cplex:3");
-	d_vector(&realub, 1, "open_cplex:3");
-	realub[0] = 0;
-	btype[0] = 'U';
-
+	
+	//Preliminary initializations
 	/*******************************/
-	cand_cover = create_int_vector(NN);
-	coeff_ES = create_double_vector(NN);
 	srand(123456789);
 	MG = 1;
 	count_added = 0;
-	tol_sep_cover = 0.001;
-	cputime_SP = 0;
-	total_assign_fixed = 0;
-
 	x = create_double_vector(NN * NN + NN);
 	Define_Core_Point();
-	//Initialize CPLEX environment
+	//Initialize the cplex environment and lp object
+	/******************************************************************************************/
 	env = CPXopenCPLEX(&status);
 	if (env == NULL) {
 		char  errmsg[1024];
@@ -77,6 +44,8 @@ void Benders_framework(void)
 		printf("%s", errmsg);
 	}
 
+	//Populate variables and constraints of the model
+	/******************************************************************************************/
 	//Add the variables with their respective positions
 	glob_numcols = add_variables(env, lp);
 
@@ -106,72 +75,35 @@ void Benders_framework(void)
 		}
 	}
 
-	//Solve the LP
+	//Solving as a Linear Program
+	/******************************************************************************************/
 	start = clock();
 	cur_numcols = CPXgetnumcols(env, lp);
 	solve_as_LP(env, lp);
 
-	//Now solving the Integer Program
+	//Setup to solve as a MIP
 	/******************************************************************************************/
 	SetBranchandCutParam(env, lp);
+	
+	/* Set up to use MIP callbacks */
+	cutinfo.x = NULL;
+	cutinfo.beg = NULL;
+	cutinfo.ind = NULL;
+	cutinfo.val = NULL;
+	cutinfo.rhs = NULL;
 	cutinfo.lp = lp;
 	cutinfo.numcols = cur_numcols;
 	cutinfo.x = (double*)malloc(cur_numcols * sizeof(double));
-
-	printf("Columns loaded in Cplex: %d \n", cur_numcols);
-	// Activate the priority branching
-	if (vers != 2) {
-		CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
-		status = CPXcopyorder(env, lp, NN * NN, indices, priority, NULL);
-	}
-	/* Set up to use MIP callbacks */
 	if (CPXsetusercutcallbackfunc(env, mycutcallback, &cutinfo)) goto TERMINATE;
 	if (CPXsetlazyconstraintcallbackfunc(env, mycutcallback, &cutinfo)) goto TERMINATE;
 	if (CPXsetheuristiccallbackfunc(env, Heur, NULL)) goto TERMINATE;
 	if (set_mip_start(env, lp, cur_numcols)) goto TERMINATE;
 	
-	//Solve the problem
-	CPXmipopt(env, lp);  //solve the integer program
-	i = CPXgetstat(env, lp);
-	if (i == 101)
-		printf("Optimal solution found\n");
-	else if (i == 102)
-		printf("e-optimal solution found\n");
-	else if (i == 107)
-		printf("Time limit reached\n");
-	else
-		printf("Unknown stopping criterion (%d)\n", i);
-
-	CPXgetmipobjval(env, lp, &value);
-	printf("Upper bound: %f   ", value);
-	best_upper_bound = value;
-	//fprintf(out," %.3f  ", value);
-	// If CPLEX was able to find the optimal solution, the previous function provides the optimal solution value
-	//if not, it provides the best upper bound
-	CPXgetbestobjval(env, lp, &value);  //best lower bound in case thew problem was not solve to optimality
-	best_lower_bound = value;
-	printf("Lower bound: %f   ", value);
-	nodecount = CPXgetnodecnt(env, lp);
-	printf(" the number of BB nodes : %ld   ", nodecount);
-
-	end = clock();
-	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Bender's Time: %.2f \n", cputime);
-	CPXgetmipx(env, lp, x, 0, cur_numcols - 1);  // obtain the values of the decision variables
-	index = 0;
-	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound, cputime, (best_upper_bound - best_lower_bound) * 100 / best_upper_bound, nodecount);
-	printf("Optimal set of hubs: ");
-	fprintf(out, "hubs:");
-	for (i = 0; i < NN; i++) {
-		if (x[pos_z[i][i]] > 0.5) {
-			printf("%d ", i + 1);
-			fprintf(out, "%d ", i + 1);
-		}
-	}
-	printf("eta: %.2f \n", x[cur_numcols - 1]);
-	fprintf(out, ";");
-	fclose(out);
+	//Solving as an Integer Program
+	/******************************************************************************************/
+	solve_ip_and_get_solution_info(env, lp, x, start, &best_upper_bound, &best_lower_bound, &nodecount);
+	
+	
 TERMINATE:
 	/* Free the allocated vectors */
 	free_and_null((char**)&cutinfo.x);
@@ -195,15 +127,75 @@ TERMINATE:
 		}
 	}
 	free(x);
-	free(cand_cover);
 	free(z_open);
 	free(z_closed);
-	free(coeff_ES);
 	free(globvarctype);
 	free(globvarind);
 	free(indices);
 	free(priority);
 }
+
+void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, clock_t start, double * best_upper_bound, double * best_lower_bound, int * nodecount) {		//Mode 0- you're consulting after solving the complete and final MIP, 1-You're consulting after solving an intermediate MIP.
+	int status,i;
+	clock_t end;
+	double cputime;
+	FILE* out;
+
+	//solve the ip
+	if (CPXmipopt(env, lp)) {
+		printf("Unable to optimize the Benders MIP reformulation");
+		exit(3);
+	}
+	//Get the status and classify accordingly
+	status = CPXgetstat(env, lp);
+	switch (status) {
+	case 101:
+	case 102:
+		printf("Optimal solution found.");
+		break;
+	case 103:
+		printf("Master Problem infeasible.");
+		break;
+	case 105:
+	case 106:
+	case 107:
+	case 108:
+		printf("Time limit reached. ");
+		break;
+	default:
+		printf("Unknown stopping criterion (%d). ", status);
+	}
+	//collect and store the information
+	if (status != 103) {
+		CPXgetmipobjval(env, lp, best_upper_bound);  //best primal solution objective function value
+		CPXgetmipx(env, lp, x, 0, glob_numcols - 1);
+		*nodecount = CPXgetnodecnt(env, lp);
+		
+	}
+	CPXgetbestobjval(env, lp, best_lower_bound);  //best lower bound in case the problem was not solved to optimality
+	end = clock();
+	cputime = (double)(end - start) / CLOCKS_PER_SEC;
+
+	out = open_file(output_text, "a+");
+	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound, cputime, (*best_upper_bound - *best_lower_bound) * 100 / *best_upper_bound, nodecount);
+	printf("Optimal set of hubs: ");
+	fprintf(out, "hubs:");
+	for (i = 0; i < NN; i++) {
+		if (x[pos_z[i][i]] > 0.5) {
+			printf("%d ", i + 1);
+			fprintf(out, "%d ", i + 1);
+		}
+	}
+	printf("eta: %.2f \n", x[glob_numcols - 1]);
+	fprintf(out, ";");
+	fclose(out);
+
+	printf("Upper bound: %f   ", *best_upper_bound);
+	printf("Lower bound: %f   ", *best_lower_bound);
+	printf(" the number of BB nodes : %ld   ", *nodecount);
+	printf("Bender's Time: %.2f \n", cputime);
+}
+
 
 int Comparevalue_zo(const void* a, const void* b)
 {
@@ -249,6 +241,12 @@ int SetBranchandCutParam(CPXENVptr env, CPXLPptr lp) {	//Here we will set the br
 	acumstatus += CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);											/* Do not use presolve */
 	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPSEARCH, CPX_MIPSEARCH_TRADITIONAL); 					/* Turn on traditional search for use with control callbacks */
 	acumstatus += CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);									 /* Let MIP callbacks work on the original model */
+
+	// Activate the priority branching
+	if (vers != 2) {
+		CPXsetintparam(env, CPX_PARAM_MIPORDIND, CPX_ON); // Turn on or off the use of priorities on bracnhing variables
+		acumstatus += CPXcopyorder(env, lp, NN * NN, indices, priority, NULL);
+	}
 	return 0;
 }
 

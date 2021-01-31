@@ -129,6 +129,7 @@ int		partial_enumeration(CPXENVptr env, CPXLPptr lp, double* x, double value, do
 int		solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double* x, double value);
 double  solve_as_LP(CPXENVptr env, CPXLPptr lp);
 int		set_mip_start(CPXENVptr env, CPXLPptr lp, int cur_numcols);
+void	solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double* x, clock_t start, double* best_upper_bound, double* best_lower_bound, int* nodecount);
 
 time_t		t; //Time stamps
 struct tm	*tm;//time pointer	
@@ -275,7 +276,6 @@ void read_heur_cl_param(const char*);
  COV        cover;
  NORD* ord_nodes;
  double* multiple;
- double* coeff_ES;
  ORD* ord_O;
  ORD* ord_D;
  double     sum_supply_i, sum_supply_j;
