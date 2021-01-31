@@ -7,18 +7,14 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <cplex.h>
-# define PI 3.141592653589793
-#define LOW 0.02425
-#define HIGH 0.97575
 #define ABS(x) (((x) > 0 ) ? (x) : -(x))	
 #define getrandom( min, max ) ((rand() % (int) (((max)+1)-(min)))+(min))
-#define TRUE 1
-#define FALSE 0
-#define NOT_AVAIL -1
-#define NONE -1
 #define MIN(a, b) (((a) > (b)) ? (b) : (a))
 #define rand_double()(rand()/(double) RAND_MAX)
 #define MAX_DOUBLE  10000000000
+// Tolerances that we keep for the LP bounds
+#define epsilon_LP_Pre 0.005
+#define epsilon_LP_BB 0.5
 
 struct cutinfo {
    CPXLPptr lp;

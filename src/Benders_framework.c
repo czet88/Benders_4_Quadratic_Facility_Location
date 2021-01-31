@@ -979,8 +979,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	int count_fixed, total_assign_fixed, assign_fixed, flag_fixed, status;
 	int i, k, flag_added;
 	int	iter;
-	double   epsilon_LP;
-	epsilon_LP = 0.005;
+	double  epsilon_LP=epsilon_LP_Pre;
 	int terminate=0;
 	clock_t start, end;
 	double cputime;
@@ -1039,6 +1038,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 				exit(1);
 			}
 			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+			printf("Fixed some variables now solve LP again. New LP value %.2lf\n", value);
 		}
 		
 		// Solve the subproblem
@@ -1058,10 +1058,11 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 
 		//If we're using the heuristic then try to find a better solution
 		if (FlagHeuristic) {
+			printf("Compare LP support is %d\n", CompareLPSupport(x));
 			if (CompareLPSupport(x) >= 2) {
 				printf("Started running Matheuristic\n");
+				PopulateLPSupport(x);
 				status = Construct_Feasible_Solution(x, dj);
-				PopulateLPSupport(NULL);
 				printf("Finished running Matheuristic\n");
 			}
 		}
