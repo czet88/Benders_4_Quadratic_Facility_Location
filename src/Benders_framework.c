@@ -1198,8 +1198,6 @@ int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double valu
 						initial_cuts[0].val[index++] = coeff_z;
 						initial_cuts[0].origval[pos_z[i][k]] = coeff_z;
 						lhs += coeff_z * x[pos_z[i][k]];
-						//if (x[pos_z[i][k]] > 0.00001)
-						 //   printf("%.2f z[%d][%d] + ", coeff_z, i + 1, k + 1);
 					}
 					else initial_cuts[0].origval[pos_z[i][k]] = 0;
 				}
@@ -1209,12 +1207,15 @@ int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double valu
 	//  printf("\n");
 	end_SP = clock();
 	if ((-lhs / value) * 100 < tolerance_sep && ((UpperBound - value) / UpperBound) * 100 < 10.0) {
+		printf("lhs value %.2lf and tolerance %.2lf\n", (-lhs / value) * 100, tolerance_sep);
 		flag_added = 0;
 	}
 	else flag_added = 1;
 	
-	if (lhs > -0.001)
+	if (lhs > -0.001) {
+		printf("Second criteria flag_added=0\n");
 		flag_added = 0;
+	}
 
 	if (flag_added) {
 		status = CPXaddrows(env, lp, 0, index1, index, initial_cuts[0].rhs, initial_cuts[0].sense, initial_cuts[0].beg, initial_cuts[0].ind, initial_cuts[0].val, NULL, NULL);
