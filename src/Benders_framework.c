@@ -69,7 +69,7 @@ void Benders_framework(void)
 	}
 	//Add capacity constraints sum(i in NN) O_i z_ik <= b*z_kk
 	if (Capacitated_instances == 1) {
-		if (add_linking_constr(env, lp)) {
+		if (add_capacity_constr(env, lp)) {
 			printf("ERROR: Unable to add capacity constraint");
 			exit(1);
 		}
@@ -953,8 +953,6 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	iter = 0;
 	count_fixed = 0;
 	total_assign_fixed = 0;
-	assign_fixed = 0;
-	flag_fixed = 0;
 
 	numrows = CPXgetnumrows(env, lp);
 	numcols = CPXgetnumcols(env, lp);
@@ -979,6 +977,8 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	}
 	//Cutting plane algorithm for solving the root node
 	do {
+		flag_fixed = 0;
+		assign_fixed = 0;
 		// Execute variable elimination where we check with the reduced cost, lp bound, and upper bound
 		reduced_cost_var_elimination(env, lp, value, dj, &count_fixed, &total_assign_fixed, &flag_fixed, &assign_fixed);
 
@@ -1003,7 +1003,8 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		flag_added = solve_Benders_subproblem(env, lp, x, value);
 
 		// If a violated cut is found, then solve the LP again
-		if (flag_added) {
+		if (flag_added) {			
+			printf("Violated Benders cut found, reoptimizing\n");
 			status = CPXlpopt(env, lp);
 			if (status) {
 				printf("Failed to optimize LP.\n");
@@ -1044,7 +1045,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		if (flag_fixed == 1) {
 			count_cand_hubs = 0;
 			for (k = 0; k < NN; k++) {
-				if (fixed_zero[k] == 0 && fixed_one[k]==0)
+				if (fixed_zero[k] == 0 /*&& fixed_one[k]==0*/)
 					cand_hubs[count_cand_hubs++] = k;
 			}
 		}
@@ -1162,7 +1163,7 @@ int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double valu
 			status = NetFlow_TP(x, i, j);
 		}
 	}
-	printf("Finished separating Benders cuts.");
+	printf("Finished separating Benders cuts.\n");
 	initial_cuts[0].sense[index1] = 'G';
 	initial_cuts[0].rhs[index1] = 0;
 	initial_cuts[0].beg[index1++] = index;
@@ -1295,7 +1296,7 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 	if (flag_fixed == 1) {
 		count_cand_hubs = 0;
 		for (k = 0; k < NN; k++) {
-			if (fixed_zero[k] == 0)
+			if (fixed_zero[k] == 0/* && fixed_one[k] == 0*/)
 				cand_hubs[count_cand_hubs++] = k;
 		}
 		printf("Partial enumeration fix to 0 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
@@ -1366,7 +1367,7 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 	if (flag_fixed == 1) {
 		count_cand_hubs = 0;
 		for (k = 0; k < NN; k++) {
-			if (fixed_zero[k] == 0)
+			if (fixed_zero[k] == 0/* && fixed_one[k] == 0*/)
 				cand_hubs[count_cand_hubs++] = k;
 		}
 		printf("Partial enumeration fix to 1 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
