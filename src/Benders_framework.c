@@ -934,7 +934,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	double* x;
 	int count_c;
 	int count_fixed, total_assign_fixed, assign_fixed, flag_fixed, status;
-	int i, k, flag_added;
+	int i, k, flag_continue;
 	int	iter;
 	double  epsilon_LP=epsilon_LP_Pre;
 	int terminate=0;
@@ -1000,18 +1000,17 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		
 		// Solve the subproblem
 		iter++;
-		flag_added = solve_Benders_subproblem(env, lp, x, value);
+		flag_continue = solve_Benders_subproblem(env, lp, x, value);
 
 		// If a violated cut is found, then solve the LP again
-		if (flag_added) {			
-			printf("Violated Benders cut found, reoptimizing\n");
-			status = CPXlpopt(env, lp);
-			if (status) {
-				printf("Failed to optimize LP.\n");
-				exit(1);
-			}
-			CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+
+		printf("Add Benders cut and reoptimizing\n");
+		if (CPXlpopt(env, lp)) {
+			printf("Failed to optimize LP.\n");
+			exit(1);
 		}
+		CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+		
 		printf("iter:%d LP bound: %.2f gap: %.2f  \n", iter, value, (UpperBound - value) / UpperBound * 100);
 
 		//If we're using the heuristic then try to find a better solution
@@ -1026,7 +1025,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		}
 
 		//Should there be a second round or not?
-		if (flag_added != 0 && (UpperBound - value) / UpperBound > epsilon_LP) {
+		if (flag_continue != 0 && (UpperBound - value) / UpperBound > epsilon_LP) {
 			terminate = 0;
 			old_objval = value;
 		}
@@ -1204,8 +1203,16 @@ int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double valu
 			}
 		}
 	}
-	//  printf("\n");
 	end_SP = clock();
+
+	status = CPXaddrows(env, lp, 0, index1, index, initial_cuts[0].rhs, initial_cuts[0].sense, initial_cuts[0].beg, initial_cuts[0].ind, initial_cuts[0].val, NULL, NULL);
+	count_added++;
+	if (status) {
+		printf("Unable to add Benders cut.\n");
+		exit(3);
+	}
+
+	// Evaluate if we should do another iteration
 	if ((-lhs / value) * 100 < tolerance_sep && ((UpperBound - value) / UpperBound) * 100 < 10.0) {
 		printf("lhs value %.2lf and tolerance %.2lf\n", (-lhs / value) * 100, tolerance_sep);
 		flag_added = 0;
@@ -1216,15 +1223,7 @@ int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double valu
 		printf("Second criteria flag_added=0\n");
 		flag_added = 0;
 	}
-
-	if (flag_added) {
-		status = CPXaddrows(env, lp, 0, index1, index, initial_cuts[0].rhs, initial_cuts[0].sense, initial_cuts[0].beg, initial_cuts[0].ind, initial_cuts[0].val, NULL, NULL);
-		count_added++;
-		if (status) {
-			printf("Unable to add Benders cut.\n");
-			exit(3);
-		}
-	}
+	
 	
 	return flag_added;
 }
