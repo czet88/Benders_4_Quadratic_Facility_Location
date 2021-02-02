@@ -768,8 +768,6 @@ void Update_Core_Point(double* z_sol) {
 				sum_i += /*z_sol[pos_z[i][cand_hubs[k]]]*/core[i][cand_hubs[k]]/**(1-not_eligible_hub[i][cand_hubs[k]])*/;
 			for (m = 0; m < count_cand_hubs; m++)
 				sum_j += /*z_sol[pos_z[j][cand_hubs[m]]]*/ core[j][cand_hubs[m]]/** (1 - not_eligible_hub[j][cand_hubs[m]])*/;
-			/* if (ABS(sum_i - sum_j) > 0.0001)
-				 printf("something wrong with core value for %d and %d: sum_i:%.2f sum_j:%.2f \n", i,j, sum_i, sum_j);*/
 		}
 	}
 	for (i = 0; i < NN; i++) {
@@ -799,7 +797,6 @@ void Update_CP_MW(double* z_sol, int i, int j) {
 	sum_core = 0;
 	for (h = 0; h < count_cand_hubs - 1; h++) {
 		open += z_sol[pos_z[cand_hubs[h]][cand_hubs[h]]];
-		//printf("Hub %d is open with %lf\n", cand_hubs[h],z_sol[pos_z[cand_hubs[h]][cand_hubs[h]]]);
 	}
 	for (h = 0; h < count_cand_hubs; h++) {
 		temp = z_sol[pos_z[j][cand_hubs[h]]] - z_sol[pos_z[i][cand_hubs[h]]];
@@ -821,23 +818,7 @@ void Update_CP_MW(double* z_sol, int i, int j) {
 		}
 		/****Updating the acumulations and sum_core****/
 		sum_core += core[j][cand_hubs[h]] + core[i][cand_hubs[h]];
-		/*acum_dem+=core[j][cand_hubs[h]];
-		acum_sup+=core[i][cand_hubs[h]];*/
 	}
-	/*core[i][cand_hubs[count_cand_hubs-1]]=1-acum_sup;
-	core[j][cand_hubs[count_cand_hubs-1]]=1-acum_dem;*/
-	/*printf("Total sum_core is %lf\n", sum_core);
-	getchar();*/
-	/****Printing Corepoint*******/
-	/*printf("Corepooint assignments of origin with %d candidate hubs\n", count_cand_hubs);
-	for(h=0;h<count_cand_hubs-1;h++){
-		if(core[i][cand_hubs[h]]+z_sol[pos_z[i][cand_hubs[h]]]>.000001)printf("core[%d][%d]=%lf vs solution[%d][%d]=%lf\n",i,cand_hubs[h],core[i][cand_hubs[h]],i,cand_hubs[h],z_sol[pos_z[i][cand_hubs[h]]] );
-	}
-	printf("Corepooint assignments of destination\n");
-	for(h=0;h<count_cand_hubs-1;h++){
-		if(core[j][cand_hubs[h]]+z_sol[pos_z[j][cand_hubs[h]]]>.000001)printf("core[%d][%d]=%lf vs solution[%d][%d]=%lf\n",j,cand_hubs[h],core[j][cand_hubs[h]],j,cand_hubs[h],z_sol[pos_z[j][cand_hubs[h]]]);
-	}
-	getchar();*/
 }
 
 void Check_CP_MW(double* z_sol, int i, int j) {
@@ -847,43 +828,16 @@ void Check_CP_MW(double* z_sol, int i, int j) {
 	values_hub = create_double_vector(count_cand_hubs);
 	acum = 0;
 	sum_core = 0;
-	//printf("There are %d candidate hubs\n",count_cand_hubs);
 	for (h = 0; h < count_cand_hubs; h++) {
-		/*checkcore1+=core[i][cand_hubs[h]];
-		checkcore2+=core[j][cand_hubs[h]];*/
 		temp = (z_sol[pos_z[j][cand_hubs[h]]] - z_sol[pos_z[i][cand_hubs[h]]]);
 		if (ABS(temp) > 0.00001) {
 			values_hub[h] = (core[i][cand_hubs[h]] - core[j][cand_hubs[h]]) / temp;
-			/*if(values_hub[h]<0){
-				temp2=core[j][cand_hubs[h]];
-				core[j][cand_hubs[h]]=core[i][cand_hubs[h]];
-				core[i][cand_hubs[h]]=temp2;
-				values_hub[h]=-values_hub[h];
-			}*/
 		}
 		else values_hub[h] = 0;
 		acum += values_hub[h];
 		if (values_hub[h] > sum_core) sum_core = values_hub[h];
-		//printf("The delta[%d] value is %lf\n", h, values_hub[h]);
+		
 	}
-	//printf("Assigned total of %lf from origin %d and %lf from destination %d \n",checkcore1,i,checkcore2,j);getchar();
-	/*core[i][cand_hubs[count_cand_hubs-1]]=1-acum_sup;
-	core[j][cand_hubs[count_cand_hubs-1]]=1-acum_dem;*/
-	/*printf("Total sum_core is %lf\n", sum_core);
-	getchar();*/
-	/****Printing Corepoint*******/
-	/*if(acum>0.0001){
-		printf("Corepoint assignments of origin with %d candidate hubs\n", count_cand_hubs);
-		for(h=0;h<count_cand_hubs-1;h++){
-			if(core[i][cand_hubs[h]]+z_sol[pos_z[i][cand_hubs[h]]]>.000001)printf("core[%d][%d]=%lf vs solution[%d][%d]=%lf\n",i,cand_hubs[h],core[i][cand_hubs[h]],i,cand_hubs[h],z_sol[pos_z[i][cand_hubs[h]]] );
-		}
-		printf("Corepoint assignments of destination\n");
-		for(h=0;h<count_cand_hubs-1;h++){
-			if(core[j][cand_hubs[h]]+z_sol[pos_z[j][cand_hubs[h]]]>.000001)printf("core[%d][%d]=%lf vs solution[%d][%d]=%lf\n",j,cand_hubs[h],core[j][cand_hubs[h]],j,cand_hubs[h],z_sol[pos_z[j][cand_hubs[h]]]);
-		}
-		printf("Accumulated value is %lf.\n Sum_core is %lf\n", acum, sum_core);
-		getchar();
-	}*/
 	if (acum < 0.001) sum_core = 0;
 	else sum_core = sum_core;
 	free(values_hub);
@@ -1003,7 +957,6 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		flag_continue = solve_Benders_subproblem(env, lp, x, value);
 
 		// If a violated cut is found, then solve the LP again
-
 		printf("Add Benders cut and reoptimizing\n");
 		if (CPXlpopt(env, lp)) {
 			printf("Failed to optimize LP.\n");
