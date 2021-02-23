@@ -177,7 +177,7 @@ void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, cloc
 	cputime = (double)(end - start) / CLOCKS_PER_SEC;
 
 	out = open_file(output_text, "a+");
-	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", best_upper_bound, best_lower_bound, cputime, (*best_upper_bound - *best_lower_bound) * 100 / *best_upper_bound, nodecount);
+	fprintf(out, "%.2f;%.2f;%.2f;%.2lf;%d; ", *best_upper_bound, *best_lower_bound, cputime, (*best_upper_bound - *best_lower_bound) * 100 / *best_upper_bound, *nodecount);
 	printf("Optimal set of hubs: ");
 	fprintf(out, "hubs:");
 	for (i = 0; i < NN; i++) {
@@ -195,7 +195,6 @@ void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, cloc
 	printf(" the number of BB nodes : %ld   ", *nodecount);
 	printf("Bender's Time: %.2f \n", cputime);
 }
-
 
 int Comparevalue_zo(const void* a, const void* b)
 {
@@ -1090,7 +1089,7 @@ int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, doubl
 	printf("Finished elimination test.\n");
 }
 
-int  solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double value) {
+int solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double value) {
 	int	flag_added;
 	double tolerance_sep;
 	clock_t start_SP, end_SP;
@@ -1212,12 +1211,12 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 		btype[0] = 'L';
 		CPXchgbds(env, lp, 1, bind, btype, realub);
 		if (CPXlpopt(env, lp)) {
-			printf("Failed to optimize LP.\n");
-			exit(2);
+			printf("Failed to optimize LP. Trying on another hub\n");
+			goto RESET;
 		}
 		if (CPXgetobjval(env, lp, &valuef)) {
 			printf( "Failed to getx LP.\n");
-			exit(2);
+			goto RESET;
 		}
 		
 		//	CPXwriteprob(env, lp, "BendersPE2.lp", NULL);
@@ -1240,6 +1239,7 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 			//	CPXwriteprob(env, lp, "BendersPE3.lp", NULL);
 		}
 
+		RESET:
 		// Return to the normal value as before
 		bind[0] = pos_z[z_closed[k].k][z_closed[k].k];
 		realub[0] = 0;
@@ -1292,14 +1292,11 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 		CPXchgbds(env, lp, 1, bind, btype, realub);		
 		if (CPXlpopt(env, lp)) {
 			printf("Failed to optimize LP.\n");
-			exit(2);
-		}
-		else {
-			printf("Solve status is %d\n", CPXgetstat(env, lp));
+			goto RESET;
 		}
 		if (CPXgetobjval(env, lp, &valuef)) {
 			printf("Failed to getx LP.\n");
-			exit(2);
+			goto RESET;
 		}
 		if (value > UpperBound) {
 			//printf("Fix z[%d] = 1 \n", z_open[k].k+1);
@@ -1310,6 +1307,8 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 			fixed_one[z_open[k].k] = 1;
 			*count_fixed=*count_fixed +1;
 		}
+
+		RESET:
 		//return to the previous value
 		bind[0] = pos_z[z_open[k].k][z_open[k].k];
 		realub[0] = 1;
