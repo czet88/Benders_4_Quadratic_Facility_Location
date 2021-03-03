@@ -50,6 +50,10 @@ def from_csvs_to_dataframe(file_prefix):
     # Rename some of the columns
     full_df['Heur_used'] = full_df.apply(lambda row: name_heur(row), axis=1)
     full_df.rename(columns={'instance': 'Instance'}, inplace=True)
+
+    # Add columns for additional reporting
+    full_df['Rel_Heur_Dev'] = 100*(full_df['UBPre']-full_df['UB']) / full_df['UB']
+    full_df['Rel_Time_Root'] = 100 * (full_df['CPU_Pre']) / full_df['CPU_all']
     return full_df
 
 
@@ -93,9 +97,12 @@ def add_report_table(df_dict, report_vals, index_vals, col_vals):
         index_use = index_vals + index_app
         df_rep = pd.pivot_table(df_dict[ele][0], values=report_vals, index=index_use, columns=col_vals, aggfunc=np.mean,
                                 margins=True, margins_name='Testbed average').round(2)
+        new_order = ['CPU_all','Rel_Heur_Dev','Num_fixed','Rel_Time_Root','BBnodes']
+        df_rep = df_rep.reindex(new_order, axis=1)
         # df_rep = df_rep.iloc[:, :-1]
-        df_rep = df_rep.drop('Testbed average', axis=1, level=1)
+        # df_rep = df_rep.drop('Testbed average', axis=1, level=1)
         df_dict[ele].append(df_rep)
+
     return df_dict
 
 
@@ -131,9 +138,9 @@ def main():
     df_dict = split_dataframe_by_case(df_full)
 
     # Define the columns, indices and values to be reported from the dataframes in the dictionaries
-    report_vals = ['CPU_all', 'GAP']
+    report_vals = ['CPU_all','Rel_Heur_Dev','Num_fixed','Rel_Time_Root','BBnodes']
     index_vals = ['Instance']
-    col_vals = ['Heur_used']
+    col_vals = None  # ['Heur_used']
 
     # Add the dataframes with the reports to the dataframe dictionary
     df_dict = add_report_table(df_dict, report_vals, index_vals, col_vals)
