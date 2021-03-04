@@ -898,7 +898,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 
 	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // Number of threads to use
 	CPXsetdblparam(env, CPX_PARAM_TILIM, 86400); // time limit
-	CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
+	//CPXsetintparam(env, CPX_PARAM_LPMETHOD, 4);
 	CPXsetintparam(env, CPX_PARAM_PRELINEAR, 0);
 
 
