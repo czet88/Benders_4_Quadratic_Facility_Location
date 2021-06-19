@@ -52,7 +52,7 @@ def from_csvs_to_dataframe(file_prefix):
     full_df.rename(columns={'instance': 'Instance'}, inplace=True)
 
     # Add columns for additional reporting
-    full_df['Rel_Heur_Dev'] = 100*(full_df['UBPre']-full_df['UB']) / full_df['UB']
+    full_df['Rel_Heur_Dev'] = 100 * (full_df['UBPre'] - full_df['UB']) / full_df['UB']
     full_df['Rel_Time_Root'] = 100 * (full_df['CPU_Pre']) / full_df['CPU_all']
     return full_df
 
@@ -97,7 +97,7 @@ def add_report_table(df_dict, report_vals, index_vals, col_vals):
         index_use = index_vals + index_app
         df_rep = pd.pivot_table(df_dict[ele][0], values=report_vals, index=index_use, columns=col_vals, aggfunc=np.mean,
                                 margins=True, margins_name='Testbed average').round(2)
-        new_order = ['CPU_all','Rel_Heur_Dev','Num_fixed','Rel_Time_Root','BBnodes']
+        new_order = ['UB', 'CPU_all', 'Rel_Heur_Dev', 'Num_fixed', 'Rel_Time_Root', 'BBnodes']
         df_rep = df_rep.reindex(new_order, axis=1)
         # df_rep = df_rep.iloc[:, :-1]
         # df_rep = df_rep.drop('Testbed average', axis=1, level=1)
@@ -116,12 +116,24 @@ def create_latex_tables(df_dict, df_position, caption_position, outfile_name):
     return None
 
 
+def create_csv_tables(df_dict, df_position, path):
+    # Function that receives a dictionary of dataframes and captions and prints the corresponding latex tables to
+    # outfile_name
+    for ele in df_dict:
+        df_dict[ele][df_position].to_csv(path + ele + '.csv')
+    return None
+
+
 def main():
     # Setup
-    output_folder_name = "Latex"
-    file_prefix = "R_"
     time_str = time.strftime("%Y%m%d_%H%M")
-    outfile_name = f"./{output_folder_name}/Ltx_{time_str}.txt"
+    output_folder_name = f"Latex/{time_str}"
+    input_folder_name = "Raw_Results"
+    # file_prefix = "R_"
+
+    file_prefix = f"./{input_folder_name}/R_"
+    outfile_name = f"./{output_folder_name}/Tables.tex"
+    file_path = f"./{output_folder_name}/"
 
     # Ensure output folder exists
     if not os.path.exists(output_folder_name):
@@ -129,7 +141,7 @@ def main():
 
     # Read arguments and adjust if necessary
     if len(sys.argv) >= 2:
-        file_prefix = sys.argv[1]
+        file_prefix = f"./{input_folder_name}/{sys.argv[1]}"
 
     # Create one concatenated dataframe for all tables read
     df_full = from_csvs_to_dataframe(file_prefix)
@@ -138,7 +150,7 @@ def main():
     df_dict = split_dataframe_by_case(df_full)
 
     # Define the columns, indices and values to be reported from the dataframes in the dictionaries
-    report_vals = ['CPU_all','Rel_Heur_Dev','Num_fixed','Rel_Time_Root','BBnodes']
+    report_vals = ['UB', 'CPU_all', 'Rel_Heur_Dev', 'Num_fixed', 'Rel_Time_Root', 'BBnodes']
     index_vals = ['Instance']
     col_vals = None  # ['Heur_used']
 
@@ -147,8 +159,9 @@ def main():
 
     # Create the Latex tables
     create_latex_tables(df_dict, 2, 1, outfile_name)
+    create_csv_tables(df_dict, 2, file_path)
 
-    print("Finished writing latex tables into " + str(outfile_name))
+    print("Finished writing latex file and csvs into " + str(outfile_name))
 
 
 if __name__ == "__main__":
