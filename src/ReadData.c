@@ -169,7 +169,7 @@ void read_instance (const char *name, int trans_fact, double coll, double trans,
 		  }
 	  }
   }
-  if(hybrid==0){  //Are we only solving the one without fixed costs
+  if(w_fixed_costs==0){  //Are we only solving the one without fixed costs
 	  for(i=0;i<NN;i++){
 		  f[i][0]=0;
 	  }

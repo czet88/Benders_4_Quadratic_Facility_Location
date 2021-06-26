@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <cplex.h>
+#include <stdbool.h>
 #define ABS(x) (((x) > 0 ) ? (x) : -(x))	
 #define getrandom( min, max ) ((rand() % (int) (((max)+1)-(min)))+(min))
 #define MAX_DOUBLE  10000000000
@@ -167,7 +168,7 @@ int CPXPUBLIC mycheckcallback (CPXCENVptr env, void *cbdata, int wherefrom,
 int CPXPUBLIC Heur(CPXCENVptr env, void *cbdata, int wherefrom,  void *cbhandle, double *objval_p, double *x, int *checkfeas_p, int *useraction_p);
 void Update_CP_MW(double *z_sol,int i, int j);
 void  free_and_null (char **ptr);
-void read_heur_cl_param(const char*);
+bool read_heur_cl_param(const char*);
  void i_vector(int **vector,int n,char *s);
  void d_vector(double **vector,int n,char *s);
  void c_vector(char **vector,int n,char *s);
@@ -199,7 +200,7 @@ void read_heur_cl_param(const char*);
  int	use_firstsolution;
  double Prev_incumbent;
  int        *best_assigmnent;
- char output_text[40];
+ char output_text[50];
  Solpool *prevsols; //pool of previous solutions
  int countsols; //coutner of how many solutions we have so far.
  double combtol; //combinatorial cut tolerance.
@@ -207,7 +208,8 @@ void read_heur_cl_param(const char*);
  int APset;
  int Capacitated_instances; //Indicator of whether the instance is capacitated or not.
  int p_hubs;//How many hubs
- int hybrid;//Are we doing both p_hubs and fixed costs? if hybrid==1 then we have only fixedcosts if 0 then have no fixed costs if hybrid==3 then we have both
+ int w_p_median_constr;//Are we doing both p_hubs and fixed costs? if w_p_median_constr==1 then we have only fixedcosts if 0 then have no fixed costs if w_p_median_constr==3 then we have both
+ int w_fixed_costs;//Do we consider the fixed costs
  int missed;//Number of times we couldn't solve subproblem
  int vers; //To control which version is being tested vers=-1 is use everything.
  double UFLPrelval;//Value of solving the UFLP.

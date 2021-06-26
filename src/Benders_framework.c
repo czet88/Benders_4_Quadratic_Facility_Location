@@ -61,7 +61,7 @@ void Benders_framework(void)
 		exit(1);
 	}
 	//Add exactly p_hubs
-	if (hybrid == 0 || hybrid == 3) {
+	if (w_p_median_constr ==1) {
 		if (add_phubs_constr(env, lp)) {
 			printf("ERROR: Unable to add p-hubs constraint");
 			exit(1);
@@ -669,7 +669,7 @@ void Define_Core_Point(void)
 			core[i][k] = 0;
 		}
 	}
-	if (hybrid == 0 || hybrid == 3) {
+	if (w_p_median_constr == 1) {
 		precount = (double)(p_hubs * 1.0 / (count_cand_hubs));
 		epsilon = (double)(1 / (2 * count_cand_hubs));
 		//printf("Precount=%lf\n",precount);

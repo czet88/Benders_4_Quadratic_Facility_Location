@@ -1,5 +1,23 @@
 #include "def.h"
 
+/* Print a usage message to stderr and abort. */
+static void
+usage(const char* progname)
+{
+	fprintf(stderr, "Usage: %s input_file_name output_file_name [Heuristic_Level] \n", progname);
+	fprintf(stderr,
+		" By default, the code will use the maximum heuristic level (2)\n"
+		" to find a feasible solution at the beginning of the solving \n"
+		" process to be able to perform variable elimination"
+		" Supported options are:\n"
+		"  0       Do not use any heuristic method\n"
+		"  1       Use the matheuristic based on \n"
+		"          ignoring the quadratic costs\n"
+		"  2       Use the matheuristic along with\n"
+		"          a local search algorithm\n");
+	exit(2);
+}
+
 int main(int argc, char* argv[])
  {
 	 int i, num_inst, count_opt, pp;
@@ -12,6 +30,7 @@ int main(int argc, char* argv[])
 	 double coll, trans, distr;
 	 double UB_heur;
 	 char fake_text[20];
+	 char input_text[50];
 	 coll = 0;
 	 trans = 0;
 	 distr = 0;
@@ -21,52 +40,48 @@ int main(int argc, char* argv[])
 	 //Default heuristic solution parameters
 	 FlagHeuristic = 1;
 	 FlagLocalSearch = 1;
-	 FlagIteratedLocalSearch = 1;
+	 vers = -1; //Version -1 contains all the bells and whistles
+	 use_firstsolution = 1; //Use the first solution found as warm start for the MIP
+	 missed = 0;
+
 	 //Read command line arguments
 	 if (argc < 3) {
-		 printf("Error: Input file and output file not specified \n");
-		 exit(8);
+		 usage(argv[0]);
 	 }
 	 //read output file name
-	 sprintf(output_text, "Results/");
+	 sprintf(output_text, "Results/Raw_Results/");
 	 strcat(output_text, argv[2]);
 	 // If we're given a heuristic parameter file, then read it
-	 if (argc >= 4) read_heur_cl_param(argv[3]);
-	 printf("FlagHeur %d,\nFlagLS %d,\nFlagILS %d\n", FlagHeuristic, FlagLocalSearch, FlagIteratedLocalSearch);
-	 ini = open_file(argv[1], "r");
-	 //ini=open_file ("25ll.txt","r");
-	 fscanf(ini, "%d", &num_inst);
-	 fscanf(ini, "%s", &fake_text);
-	 /*Printing the time and date these are being executed*/
-	 /************************************************/
-	 t = time(NULL);
-	 tm = localtime(&t);
+	 if (argc >= 4 && !read_heur_cl_param(argv[3])) {
+		 usage(argv[0]);
+	 }
+	 int totalFlag = FlagHeuristic + FlagLocalSearch;
+
+	 //read input file name
+	 sprintf(input_text, "Inputs/");
+	 strcat(input_text, argv[1]);
+	 printf("Input: %s\nOutput: %s\n", input_text, output_text);
+	 //Write the header of the output file
 	 out = open_file(output_text, "a+");
-	 fprintf(out, "Vers;instance;APset;Cap;p;hybrid;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n");
+	 fprintf(out, "instance;APset;Cap;p;p_median_constr;fixed_costs;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss\n");
 	 fclose(out);
+	 ini = open_file(input_text, "r");
+	 fscanf(ini, "%d", &num_inst);
 	 for (i = 0; i < num_inst; i++) {
-		 use_firstsolution = 1;
-		 missed = 0;
-		 fscanf(ini, "%d", &vers);
-		 fscanf(ini, "%d", &APset);
-		 fscanf(ini, "%d", &Capacitated_instances);
-		 fscanf(ini, "%d", &p_hubs);
-		 fscanf(ini, "%d", &hybrid);
-		 fscanf(ini, "%s", &instance);
-		 //fscanf(ini,"%d %lf %lf %lf",&pp,&coll,&trans,&distr);
+		 fscanf(ini, "%d", &APset); //{0,1} flag to denote f reading from AP data set
+		 fscanf(ini, "%d", &Capacitated_instances); //{0,1} flag to denote if we ignore or not the capacity constraints
+		 fscanf(ini, "%d", &p_hubs);//Maximum number of hubs to be opened
+		 fscanf(ini, "%d", &w_p_median_constr);// Consider a p_median constraint
+		 fscanf(ini, "%d", &w_fixed_costs);// Consider fixed costs
+		 fscanf(ini, "%s", &instance); //Name of the instance
+
+		 //Read the data from the instance file
 		 read_instance(instance, 5 - 4 * APset, coll, trans, distr, APset);
-		 printf(" %s  alpha= %0.2f \n", instance, trans);
-		 //Obtain initial solution from a SSCFLP
 		 UpperBound = MAX_DOUBLE;
-		 // if(vers!=0) SSCFLP_model();
-		 // if(vers!=1) UB_heur = Det_Iterated_Local_Search(); //Improve solution with a local search
-		 // end = clock();
-		 // cputime_heur = (double)(end - start) / CLOCKS_PER_SEC;
-		 int totalFlag = FlagHeuristic + FlagLocalSearch + FlagIteratedLocalSearch;
+		 //Write the header names into the output file
 		 out = open_file(output_text, "a+");
-		 fprintf(out, "%d;%s;%d;%d;%d;%d;%d;", vers, instance, APset, Capacitated_instances, p_hubs, hybrid, totalFlag);
+		 fprintf(out, "%s;%d;%d;%d;%d;%d;%d;", instance, APset, Capacitated_instances, p_hubs, w_p_median_constr, w_fixed_costs, totalFlag);
 		 fclose(out);
-		 //Solve root node
 		 start = clock();
 		 Benders_framework();
 		 end = clock();
@@ -75,33 +90,30 @@ int main(int argc, char* argv[])
 		 out = open_file(output_text, "a+");
 		 fprintf(out, "%.2f; %d; %.2lf; %.2lf\n", cputime, missed, cpuFacLocIni, cpuGenAss);
 		 fclose(out);
-		 //CHLPSA_model();
-		 //Original_Model();  //Solve four-index formulation directly with CPLEX
 		 free_memory();
 		 printf("Finished solving\n");
-		 //getchar();
 	 }
 	 fclose(ini);
 	 return 0;
  }
 
-void read_heur_cl_param(const char* name) {
+bool read_heur_cl_param(const char* name) {	
 	/* Modify global parameters */
-	if (strcmp(name, "NoHeur") == 0) {
+	if (strcmp(name, "0") == 0) {
 		FlagHeuristic = 0;
 		FlagLocalSearch = 0;
-		FlagIteratedLocalSearch = 0;
+		return true;
 	}
-	if (strcmp(name, "Heur") == 0) {
+	if (strcmp(name, "1") == 0) {
 		FlagLocalSearch = 0;
-		FlagIteratedLocalSearch = 0;
+		return true;
 	}
-	if (strcmp(name, "LS") == 0) {
-		FlagIteratedLocalSearch = 0;
-	}
-	if (strcmp(name, "ILS") == 0) {
+	if (strcmp(name, "2") == 0) {
 		FlagHeuristic = 1;
 		FlagLocalSearch = 1;
-		FlagIteratedLocalSearch = 1;
+		return true;
 	}
+	return false;
 }
+
+

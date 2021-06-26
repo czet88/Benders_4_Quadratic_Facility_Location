@@ -68,110 +68,6 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			printf("Improved Upperbound from Local Search: %.2f \n", objvalue);
 		}
 		memcpy(initial_open_plants, current_open_plants, NN * sizeof(int));
-		if (FlagIteratedLocalSearch) {
-			for (iter = 0; iter < iter_max; iter++) {
-				for (l = 0; l < NN; l++)
-					current_open_plants[l] = initial_open_plants[l];
-				count_open = 0;
-				sum_cap = 0;
-				//Determine how many facilities should change in sol
-				for (l = 0; l < NN; l++) {
-					if (current_open_plants[l] == 1) {
-						which_open_plants[count_open] = l;
-						modified[count_open++] = 0;
-						sum_cap += b[l][0];
-					}
-				}
-				target_modify = (int)ceil(keep_perc_open * count_open);
-				if (target_modify <= 1) {
-					if (count_open > 1) {
-						lower_limit = 1;
-						upper_limit = 2;
-					}
-					else {
-						lower_limit = 1;
-						upper_limit = 1;
-					}
-				}
-				else {
-					lower_limit = target_modify - 1;
-					upper_limit = target_modify + 1;
-				}
-				num_modify = getrandom(lower_limit, upper_limit);
-				for (l = 0; l < num_modify; l++) {
-					done = 0;
-					do {
-						r = getrandom(0, count_open - 1);
-						//printf("num_modify = %d, r=%d, modified[0] = %d, modified[1] = %d, count_open = %d \n", num_modify, r, modified[0], modified[1], count_open);
-						//if (r == 1 && modified[r] == 1)
-						//	exit(8);
-						if (modified[r] == 0) {
-							done = 1;
-							modified[r] = 1;
-							sum_cap -= b[which_open_plants[r]][0];
-							status = 0;
-							current_open_plants[which_open_plants[r]] = 0;
-							//printf("r:%d which: %d \n", r, which_open_plants[r]);
-							do {
-								rr = getrandom(0, NN - 1);
-								if (current_open_plants[rr] == 0 && which_open_plants[r] != rr) {
-									current_open_plants[rr] = 1;
-									sum_cap += b[rr][0];
-									status = 1;
-									//	printf("r:%d which: %d rr:%d \n", r, which_open_plants[r], rr);
-								}
-							} while (status != 1);
-						}
-					} while (done != 1);
-				}
-				//Determine the cardinality of new set of open facilities
-				if (hybrid != 0) {
-					if (count_open - 1 > 0)
-						min_range = count_open - 1;
-					else
-						min_range = 1;
-					target_open_facilties = getrandom(min_range, count_open + 1);
-					if (count_open >= 2 && target_open_facilties == count_open - 1) {
-						r = getrandom(0, count_open - 1);
-						modified[r] = 1;
-						sum_cap -= b[which_open_plants[r]][0];
-						current_open_plants[which_open_plants[r]] = 0;
-					}
-					else {
-						if (count_open + 1 < NN && target_open_facilties == count_open + 1) {
-							status = 0;
-							do {
-								r = getrandom(0, NN - 1);
-								if (current_open_plants[r] == 0) {
-									current_open_plants[r] = 1;
-									sum_cap += b[r][0];
-									status = 1;
-								}
-							} while (status != 1);
-						}
-					}
-				}
-				//printf("open: %d p: %d nummodify: %d \n", count_open, p_hubs, num_modify);
-				if (AggregatedDemand <= sum_cap) {
-					status = Reassign_nodes_red(current_assigmnent, current_open_plants);
-					if (status == 1) {
-						//Evaluate quadratic objective function
-						objvalue = Evaluate_Quadratic_Objective(current_open_plants, current_assigmnent, current_capacity);
-						//Disversification-Intensification strategies
-						Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
-						Assignment_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, &objvalue);
-						//Update incumbent solution
-						printf("iter:%d objvalue: %.2f \n", iter, objvalue);
-						if (objvalue < UpperBound) {
-							UpperBound = objvalue;
-							memcpy(best_sol_assignments, current_assigmnent, NN * sizeof(int));
-							memcpy(best_sol_facilities, current_open_plants, NN * sizeof(int));
-							printf("Improved Upperbound from Iterated Local Search: %.2f \n", objvalue);
-						}
-					}
-				}
-			}
-		}
 	}
 	printf("Matheuristic final UB: %.2f  open facilities: \n", objvalue);
 	for (i = 0; i < NN; i++) {
@@ -219,9 +115,9 @@ void Facility_Change_Phase(int *current_assigmnent, int *current_open_plants,  d
 		flag = clients_swap_red(current_assigmnent, current_open_plants, current_capacity, &value);
 		if (flag == 0) {
 			flag = clients_shift_red(current_assigmnent, current_open_plants, current_capacity, &value);
-			if (flag == 0 && hybrid == 1) {
+			if (flag == 0 && w_p_median_constr == 0) {
 				flag = open_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
-				if (flag == 0 && hybrid == 1){
+				if (flag == 0 && w_p_median_constr == 0){
 					flag = close_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
 					if (flag == 0)
 						flag = open_close_hub_red(current_assigmnent, current_open_plants, current_capacity, &value);
@@ -490,7 +386,7 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	free(sense);
 	free(rhs);
 	//Add exactly p_hubs
-	if (hybrid == 0 || hybrid == 3) {
+	if (w_p_median_constr==0) {
 		numrows = 1;
 		numnz = count_c;
 		d_vector(&rhs, numrows, "open_cplex:2");
