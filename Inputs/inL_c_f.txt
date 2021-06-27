@@ -1,0 +1,16 @@
+15					
+0	1	250	0	1	250IIIi.txt
+0	1	300	0	1	300IIIi.txt
+0	1	350	0	1	350IIIi.txt
+0	1	400	0	1	400IIIi.txt
+0	1	450	0	1	450IIIi.txt
+0	1	500	0	1	500IIIi.txt
+0	1	600	0	1	600Ia.txt
+0	1	650	0	1	650Ia.txt
+0	1	700	0	1	700Ia.txt
+0	1	750	0	1	750Ia.txt
+0	1	800	0	1	800Ia.txt
+0	1	850	0	1	850Ia.txt
+0	1	900	0	1	900Ia.txt
+0	1	950	0	1	950Ia.txt
+0	1	1000	0	1	1000Ia.txt

@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 		 fscanf(ini, "%d", &w_p_median_constr);// Consider a p_median constraint
 		 fscanf(ini, "%d", &w_fixed_costs);// Consider fixed costs
 		 fscanf(ini, "%s", &instance); //Name of the instance
-
+		 printf("++++++++++++++++++++++++++++++++++\nSolving %s\n", instance);
 		 //Read the data from the instance file
 		 read_instance(instance, 5 - 4 * APset, coll, trans, distr, APset);
 		 UpperBound = MAX_DOUBLE;
@@ -86,12 +86,12 @@ int main(int argc, char* argv[])
 		 Benders_framework();
 		 end = clock();
 		 cputime = (double)(end - start) / CLOCKS_PER_SEC;
-		 printf("\nFInal CPU time: %.2lf\n", cputime);
+		 printf("Final CPU time: %.2lf\n", cputime);
 		 out = open_file(output_text, "a+");
 		 fprintf(out, "%.2f; %d; %.2lf; %.2lf\n", cputime, missed, cpuFacLocIni, cpuGenAss);
 		 fclose(out);
 		 free_memory();
-		 printf("Finished solving\n");
+		 printf("++++++++++++++++++++++++++++++++++\nFinished solving %s\n", instance);
 	 }
 	 fclose(ini);
 	 return 0;

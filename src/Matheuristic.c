@@ -23,6 +23,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	iter_max = 10;
 	keep_perc_open = 0.2;
 	count_c = 0;
+	printf("************************************\nStarting Heuristic Procedure\n");
 	printf("candidate facilites in support: ");
 	for (k = 0; k < NN; k++) {
 		current_open_plants[k] = 0;
@@ -49,6 +50,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 		printf("Initial Upperbound from Matheuristic: %.2f \n", objvalue);
 	}
 	if (FlagLocalSearch) {
+		printf("...\nBeginning Local Search\n");
 		//Disversification-Intensification strategies
 		Facility_Change_Phase(current_assigmnent, current_open_plants, current_capacity, z_cand, count_c, &objvalue, dj);
 		printf("UB after facility change: %.2f\n", objvalue);
@@ -68,8 +70,9 @@ int Construct_Feasible_Solution(double *x, double *dj)
 			printf("Improved Upperbound from Local Search: %.2f \n", objvalue);
 		}
 		memcpy(initial_open_plants, current_open_plants, NN * sizeof(int));
+		printf("Finished Local Search\n...\n");
 	}
-	printf("Matheuristic final UB: %.2f  open facilities: \n", objvalue);
+	printf("Heuristic final UB: %.2f  open facilities: \n", objvalue);
 	for (i = 0; i < NN; i++) {
 		if (current_open_plants[i] == 1)
 			printf("%d ", i + 1);
@@ -82,6 +85,7 @@ int Construct_Feasible_Solution(double *x, double *dj)
 	free(initial_open_plants);
 	free(which_open_plants);
 	free(modified);
+	printf("Finished Heuristic Procedure\n************************************\n");
 	return 1;
 }
 

@@ -141,6 +141,7 @@ void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, cloc
 	double cputime;
 	FILE* out;
 
+	printf("---------------------------\nEntering Branch and cut on Benders reformulation\n");
 	//solve the ip
 	if (CPXmipopt(env, lp)) {
 		printf("Unable to optimize the Benders MIP reformulation");
@@ -151,19 +152,19 @@ void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, cloc
 	switch (status) {
 	case 101:
 	case 102:
-		printf("Optimal solution found.");
+		printf("Optimal solution found.\n");
 		break;
 	case 103:
-		printf("Master Problem infeasible.");
+		printf("Master Problem infeasible.\n");
 		break;
 	case 105:
 	case 106:
 	case 107:
 	case 108:
-		printf("Time limit reached. ");
+		printf("Time limit reached.\n");
 		break;
 	default:
-		printf("Unknown stopping criterion (%d). ", status);
+		printf("Unknown stopping criterion (%d).\n", status);
 	}
 	//collect and store the information
 	if (status != 103) {
@@ -192,8 +193,9 @@ void solve_ip_and_get_solution_info(CPXENVptr env, CPXLPptr lp, double * x, cloc
 
 	printf("Upper bound: %f   ", *best_upper_bound);
 	printf("Lower bound: %f   ", *best_lower_bound);
-	printf(" the number of BB nodes : %ld   ", *nodecount);
+	printf("the number of BB nodes : %ld   ", *nodecount);
 	printf("Bender's Time: %.2f \n", cputime);
+	printf("Finished the Branch and cut on Benders reformulation\n---------------------------\n");
 }
 
 int Comparevalue_zo(const void* a, const void* b)
@@ -919,14 +921,14 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 		exit(2);
 	}
 	CPXsolution(env, lp, &status, &value, x, NULL, NULL, dj);
+	printf("---------------------------\nSolving root node\n");
 	printf("Initial LP bound: %.2lf\n", value);
 	
 	//Run heuristc using info from fractional solution x
 	if (FlagHeuristic) {
 		PopulateLPSupport(x);
-		printf("Started solving heuristic\n");
 		status = Construct_Feasible_Solution(x, dj);
-		printf("Finished solving heuristic.\n");
+		
 	}
 	//Cutting plane algorithm for solving the root node
 	do {
@@ -967,12 +969,11 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 
 		//If we're using the heuristic then try to find a better solution
 		if (FlagHeuristic) {
-			printf("Compare LP support is %d\n", CompareLPSupport(x));
+			//printf("Compare LP support is %d\n", CompareLPSupport(x));
 			if (CompareLPSupport(x) >= 2) {
-				printf("Started running Matheuristic\n");
+				printf("************************************\nDifferent LP Support\n");
 				PopulateLPSupport(x);
 				status = Construct_Feasible_Solution(x, dj);
-				printf("Finished running Matheuristic\n");
 			}
 		}
 
@@ -988,7 +989,6 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	} while (terminate != 1);
 	end = clock();
 	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Root node LP bound: %.2f \n Root node Time: %.2f \n Num Benders cuts: %d\n", value, cputime, count_added);
 	
 	//Partial Enumeration phase part I: Again try to permanently open or close a set of hubs
 	if (vers != 4) {														
@@ -1001,7 +1001,7 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 			}
 		}
 		Define_Core_Point();
-		printf("Partial enumeration performed \n Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
+		printf("Fixed hubs: %d Remaining hubs: %d \n", count_fixed, count_cand_hubs);
 	}
 	status = CPXlpopt(env, lp);
 	if (status) fprintf(stderr, "Failed to optimize LP.\n");
@@ -1009,10 +1009,11 @@ double solve_as_LP(CPXENVptr env, CPXLPptr lp) {
 	if (status) fprintf(stderr, "Failed to getx LP.\n");
 	end = clock();
 	cputime = (double)(end - start) / CLOCKS_PER_SEC;
-	printf("Root node LP bound after PE: %.2f \n PE Time: %.2f \n Hubs fixed: %d \n", value, cputime, count_fixed);
+	printf("Root node LP bound after PE: %.2f \nBest UB found: %.2lf \nCurrent Gap: %.2lf\% \nPE Time: %.2f \nHubs fixed: %d \nNum Benders cuts: %d\n", value, UpperBound, (UpperBound-value)/value*100,cputime, count_fixed, count_added);
 	out = open_file(output_text, "a+");
 	fprintf(out, "%.2lf;%.2f;%.2f;%d;%d;", UpperBound, value, cputime, iter, count_fixed);
 	fclose(out);
+	printf("Finished solving root node\n---------------------------\n");
 	return value;
 }
 
@@ -1031,7 +1032,7 @@ int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, doubl
 	btype[0] = 'U';
 	
 	//Simple variable fixing test with reduced cost coefficients
-	printf("Starting reduced cost elimination test\n");
+	//printf("Starting reduced cost elimination test\n");
 	
 	if (vers != 5) {
 		for (i = 0; i < count_cand_hubs; i++) {
@@ -1075,7 +1076,7 @@ int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, doubl
 		}
 		if (*assign_fixed > 0) {
 			*total_assign_fixed += *assign_fixed;			
-			printf("Fixed %d assig variables in current iter, total fixed %d, (%.2f percentage) \n", *assign_fixed, *total_assign_fixed, (float)(*total_assign_fixed) / (NN * NN) * 100);
+			//printf("Fixed %d assig variables in current iter, total fixed %d, (%.2f percentage) \n", *assign_fixed, *total_assign_fixed, (float)(*total_assign_fixed) / (NN * NN) * 100);
 		}
 		if (*flag_fixed == 1) { //If I fixed to 0 some hubs
 			count_cand_hubs = 0;
@@ -1083,10 +1084,10 @@ int reduced_cost_var_elimination(CPXENVptr env, CPXLPptr lp, double value, doubl
 				if (fixed_zero[k] == 0)
 					cand_hubs[count_cand_hubs++] = k;
 			}
-			printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+			//printf("Elimination test performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
 		}
 	}
-	printf("Finished elimination test.\n");
+	//printf("Finished elimination test.\n");
 }
 
 int solve_Benders_subproblem(CPXENVptr env, CPXLPptr lp, double *x, double value) {
@@ -1201,7 +1202,7 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 			count_c++;
 		}
 	}
-	printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 0. \n", count_c);
+	//printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 0. \n", count_c);
 	flag_fixed = 0; 
 	//qsort((ZVAL*)z_closed, count_c, sizeof(z_closed[0]), Comparevalue_zc); 
 	for (k = 0; k < count_c; k++) {  			
@@ -1252,7 +1253,7 @@ int pe_fix_to_zero(CPXENVptr env, CPXLPptr lp, double *x, double value, double* 
 			if (fixed_zero[k] == 0/* && fixed_one[k] == 0*/)
 				cand_hubs[count_cand_hubs++] = k;
 		}
-		printf("Partial enumeration fix to 0 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+		//printf("Partial enumeration fix to 0 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
 	}
 
 	free(bind);
@@ -1281,7 +1282,7 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 		}
 	}
 	
-	printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 1. \n", count_o);
+	//printf("Entered partial enumeration phase to check %d of them. Attempting to fix to 1. \n", count_o);
 	flag_fixed = 0;
 	for (k = 0; k < count_o; k++) {  						// Temporarily fix z_kk = 0 to try to permantely open it (i.e. z_k = 1 from now on)
 		// Temporarily fix z_kk = 0 to try to permantely open it (i.e. z_k = 1 from now on)
@@ -1315,14 +1316,14 @@ int pe_fix_to_one(CPXENVptr env, CPXLPptr lp, double* x, double value, double* d
 		btype[0] = 'U';
 		CPXchgbds(env, lp, 1, bind, btype, realub);
 	}
-	printf("Finished partial enumeration phase\n");
+	//printf("Finished partial enumeration phase\n");
 	if (flag_fixed == 1) {
 		count_cand_hubs = 0;
 		for (k = 0; k < NN; k++) {
 			if (fixed_zero[k] == 0/* && fixed_one[k] == 0*/)
 				cand_hubs[count_cand_hubs++] = k;
 		}
-		printf("Partial enumeration fix to 1 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
+		//printf("Partial enumeration fix to 1 performed \n Fixed hubs: %d Remaining hubs: %d \n", *count_fixed, count_cand_hubs);
 	}
 
 	free(bind);
@@ -1380,9 +1381,9 @@ int set_mip_start(CPXENVptr env, CPXLPptr lp, int cur_numcols) {
 	values[cur_numcols - 1] = (double)(UpperBound - eta_cost);
 	//values[cur_numcols - 1] = UpperBound;
 	varindices[cur_numcols - 1] = cur_numcols - 1;
-	printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN * NN, UpperBound, eta_cost);
+	//printf("globnumcols: %d cur_cols: %d (%d), %.2f, %.2f \n", glob_numcols, cur_numcols, NN * NN, UpperBound, eta_cost);
 	status = CPXaddmipstarts(env, lp, 1, cur_numcols, beg, varindices, values, effortlevel, NULL);
-	printf("status: %d \n", status);
+	//printf("status: %d \n", status);
 	free(beg);
 	free(effortlevel);
 	free(varindices);
