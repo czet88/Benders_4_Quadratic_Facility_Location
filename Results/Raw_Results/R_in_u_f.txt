@@ -1,2 +1,3 @@
 instance;APset;Cap;p;p_median_constr;fixed_costs;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss
+100lt.txt;1;0;100;0;1;2;instance;APset;Cap;p;p_median_constr;fixed_costs;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss
 100lt.txt;1;0;100;0;1;2;
