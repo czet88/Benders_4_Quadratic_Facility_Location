@@ -79,11 +79,11 @@ In addition, at the root folder the following visual studio files for quick _Win
 +-- CHLPA.vcxproj <br />
 +-- CHLPA.vcxproj.user <br />
 
-The licence file (GNU GLP3.0) and README are also located in the root folder
+The licence file (GNU GLP3.0) and README are also located in the root folder <br />
 +-- LICENCE <br />
 +-- README.MD <br />
 
-Finally, a shell script is also located at the root folder for quick _LINUX setup_. (Note: The path to CPLEX must be adjusted in the Makefile) 
+Finally, a shell script is also located at the root folder for quick _LINUX setup_. (Note: The path to CPLEX must be adjusted in the Makefile) <br />
 +-- run_tests.sh <br />
  
 
