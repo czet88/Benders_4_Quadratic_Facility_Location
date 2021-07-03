@@ -74,7 +74,7 @@ To keep the root folder as clean as possible, the authors have used the followin
 * Scripts - contains shell scripts used in the LINUX setup
 * src - contains the C source code of the algorithm used to solve Quadratic Facility Location Problems
 
-In addition, at the root folder the following visual studio files for quick _Windows setup_. (Note: For the smoothest process we suggest Visual Studio 2019 community edition) <br />
+At the root folder the following visual studio files for quick _Windows setup_. (Note: For the smoothest process we suggest Visual Studio 2019 community edition) <br />
 +-- CHLPA.sln <br />
 +-- CHLPA.vcxproj <br />
 +-- CHLPA.vcxproj.user <br />
