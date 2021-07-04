@@ -49,16 +49,20 @@ To achieve this, our algorithm uses:
 
 To avoid excess overhead incurred when using higher-level languages, the source code of the solution algorithm is coded in C while python is used only in a postprocessing step to create Latex Tables from the output files of the solution algorithm.
 
-Finally, the source code requires [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio). This is a choice made by the authors based on their level of comfort with this software. CPLEX is called throughout the program via its Callable Library API.
+## Dependencies
+* C/C++ compiler such as GCC for Linux (this usually already comes pre-installed) or use Visual Studio (preferably 2019) for Windows.
+* [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio) a general mixed integer programming solver. This is a choice made by the authors based on their level of comfort with this software. CPLEX is called throughout the program via its Callable Library API.
 
 <!-- GETTING STARTED -->
-## Getting Started
+## Quick Start
 
 To get a local copy of the algorithm you can open your preferred terminal and, assuming you have previously installed [GIT](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), you can run the following command:
 ```
 git clone https://github.com/czet88/Benders_4_Quadratic_Facility_Location.git
 ```
 This will copy all the contents of the repository into a folder named *Benders_4_Quadratic_Facility_Location*.
+
+
 
 <!-- FOLDER STRUCURE -->
 ### Folder Structure
