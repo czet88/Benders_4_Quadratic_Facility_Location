@@ -65,7 +65,7 @@ This will copy all the contents of the repository into a folder named *Benders_4
 ### Windows
 Open the visual studio project named CHLPA.sln located in the root folder. 
 
-The project is currently setup to read the **input file** (located in the "Inputs" directory) named "in_u_f.txt"  that contains execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
+The project is currently setup to read the **input file** (located in the "Inputs" directory) named "in_u_f.txt". This file contains the execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
 
 Once the project has opened you can run it in release mode by pressing ```Ctrl```+```F5```.
 
@@ -85,7 +85,7 @@ LIB = ${Your_Path_To_CPLEX_root_Folder}
 
 Next, in the root folder, execute the shell script named run_tests.sh/
 
-This will execute the code reading the **input file** named "in_u_f.txt" (located in the "Inputs" directory) that contains execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
+This will execute the code reading the **input file**  (located in the "Inputs" directory) named "in_u_f.txt". This file contains the execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
 
 
 <!-- FOLDER STRUCURE -->
@@ -113,10 +113,6 @@ The licence file (GNU GLP3.0) and README are also located in the root folder <br
 
 Finally, a shell script is also located at the root folder for quick _LINUX setup_. (Note: The path to CPLEX must be adjusted in the Makefile) <br />
 +-- run_tests.sh <br />
- 
-
-
-
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
