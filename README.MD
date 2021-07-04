@@ -40,7 +40,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems.  
+This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems. The repository is structured for fast setup both in Windows (using Visual Studio 2019) and Linux (using bash scripts).   
 
 To achieve this, our algorithm uses:
 * A fast and efficient matheuristic that solves a "linearized" problem on a "restricted" set of variables.
@@ -51,7 +51,7 @@ To avoid excess overhead incurred when using higher-level languages, the source 
 
 ## Dependencies
 * C/C++ compiler such as GCC for Linux (this usually already comes pre-installed) or use Visual Studio (preferably 2019) for Windows.
-* [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio) a general mixed integer programming solver. This is a choice made by the authors based on their level of comfort with this software. CPLEX is called throughout the program via its Callable Library API.
+* [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio) [version 12.9]- a general mixed integer programming solver. This is a choice made by the authors based on their level of comfort with this software. CPLEX is called throughout the program via its Callable Library API.
 
 <!-- GETTING STARTED -->
 ## Quick Start
@@ -62,6 +62,30 @@ git clone https://github.com/czet88/Benders_4_Quadratic_Facility_Location.git
 ```
 This will copy all the contents of the repository into a folder named *Benders_4_Quadratic_Facility_Location*.
 
+### Windows
+Open the visual studio project named CHLPA.sln located in the root folder. 
+
+The project is currently setup to read the **input file** (located in the "Inputs" directory) named "in_u_f.txt"  that contains execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
+
+Once the project has opened you can run it in release mode by pressing ```Ctrl```+```F5```.
+
+The project is setup assuming:
+* The CPLEX include directory is located at C:\Program Files\IBM\ILOG\CPLEX_Studio129\cplex\include\ilcplex
+* The CPLEX library file used in the Linker is located C:\Program Files\IBM\ILOG\CPLEX_Studio129\cplex\lib\x64_windows_vs2017\stat_mda\cplex1290.lib
+
+### Linux
+First, modify the Library path in the Makefile found in the src\ folder by changing the
+```
+LIB = /encs/pkg/cplex-12.9.0/root/cplex
+```
+to
+```
+LIB = ${Your_Path_To_CPLEX_root_Folder}
+```
+
+Next, in the root folder, execute the shell script named run_tests.sh/
+
+This will execute the code reading the **input file** named "in_u_f.txt" (located in the "Inputs" directory) that contains execution parameters to solve the Uncapacitated Single Allocation Hub Location Problem with Fixed Costs of the well-known AP instances (located in the "Data" directory). Upon execution, the code will write the **output file** "R_in_u_f.txt" into the relative path ```\Results\Raw_Results``` which can then be processed by the python script located in the Results folder.
 
 
 <!-- FOLDER STRUCURE -->
