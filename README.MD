@@ -40,7 +40,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This project is the result of 3 years of research. The result is, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems.  
+This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems.  
 
 To achieve this, our algorithm uses:
 * A fast and efficient matheuristic that solves a "linearized" problem on a "restricted" set of variables.
