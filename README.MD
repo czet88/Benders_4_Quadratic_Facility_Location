@@ -40,9 +40,9 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems. The repository is structured for fast setup both in Windows (using Visual Studio 2019) and Linux (using bash scripts).   
+This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems known as the AP and I instances of single-allocation hub location problems. The solution method generalizes to any quadratic facility location problem with single assignments. The repository is structured for fast setup both in Windows (using Visual Studio 2019) and Linux (using bash scripts).   
 
-To achieve this, our algorithm uses:
+The components that make our algorithm fast are:
 * A fast and efficient matheuristic that solves a "linearized" problem on a "restricted" set of variables.
 * A formulation of reduced size obtained by a Benders reformulation of a strong linearization of the quadratic formulation.
 * Variable fixing techniques such as Reduced Cost Variable Elimination and Partial Enumeration
@@ -146,7 +146,54 @@ Supported options are:
 * 1- Use the matheuristic based on ignoring the quadratic costs
 * 2- Use the matheuristic along with a local search algorithm
 
+The code will then search in the "Inputs" directory for the file named "input_file_name" containing the execution parameters of the run and will then write the results of the algorithm into a file named "output_file_name" in the "Results\Raw_Results" directory.
 
+
+<!-- Input File format -->
+### Input File format
+```
+num_instances_to_execute
+is_AP_instance  is_capacitated  num_hubs  w_p_median_constr  w_fixed_costs  instance_file_name
+is_AP_instance  is_capacitated  num_hubs  w_p_median_constr  w_fixed_costs  instance_file_name
+is_AP_instance  is_capacitated  num_hubs  w_p_median_constr  w_fixed_costs  instance_file_name
+```
+where
+* num_instances_to_execute is the number of instances to be executed
+* is_AP_instance equals 1 if the instance to be solved is an AP instance and 0 if it is an I instance.
+* is_capacitated equals 1 if the instance to be solved has capacity constraints and 0 if it does not.
+* num_hubs is the number of hubs that we require to be opened. This is only considered when the following parameter equals 1.
+* w_p_median_constr equals 1 if there is a restriction on the number of hubs to open and 0 otherwise.
+* w_fixed_costs equals 1 if the opening of a hub has a fixed cost and 0 otherwise.
+* instance_file_name contains the name of the instance to be solved.
+
+<!-- Input File format -->
+### Output File format
+```
+instance;APset;Cap;p;p_median_constr;fixed_costs;heurParam;UBPre;LBPre;CPU_Pre;Num_Iter;Num_fixed;UB;LB;time_BC;GAP;BBnodes;Hubs;CPU_all;Missed; CPUFLP;CPUGAss
+```
+where 
+* instance is the name of the instance to be solved
+* APset equals 1 if it is an AP instance and 0 if it is an I instance
+* Cap equals 1 if the instance was solved with capacity constraints and 0 otherwise
+* p is the number of hubs that we require to be opened. This is only considered when the following parameter equals 1
+* p_median_constr equals 1 if there is a restriction on the number of hubs to open and 0 otherwise
+* fixed_costs equals 1 if the opening of a hub has a fixed cost and 0 otherwise
+* heurParam describes the effort level dedicated to finding a good heuristic solution
+* UBPre is the upper bound (value of the best feasible solution found) after solving the root node.
+* LBPre is the lower bound of the branch-and-cut tree after solving the root node.
+* CPU_Pre is the **time in seconds** spent solving the root node
+* Num_Iter is the number of cutting plane iterations done at the root node
+* Num_fixed is the number of variables that were fixed after solving the root node
+* UB is the value of the best feasible solution found at the end of the code's execution
+* LB is the lower bound at the end of the code's execution
+* time_BC is the **time in seconds** spent exploring the non-root nodes of the branch-and-cut tree
+* GAP is the optimality gap at the end of the code's execution. (UB-LB)/UB\*100
+* BBnodes is the number of branch-and-cut tree nodes that were explored at the end of the code's execution 
+* Hubs is the list of hubs that were opened in the best found solution
+* CPU_all is the total time the algorithm ran
+* Missed is the number of times the Benders subproblem was infeasible
+* CPUFLP is the **time in seconds** taken to solve the linear estimation MILP
+* CPUGAss is the  **time in seconds** spent solving generalized assignment problems in the heuristic phase of the algorithm
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
