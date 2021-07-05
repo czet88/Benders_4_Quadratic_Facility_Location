@@ -60,6 +60,7 @@
         <li><a href="#output-file-format">Output File Format</a></li>
       </ul>
   </ol>
+  <li><a href="#processing-raw-results">Processing Raw Results</a></li>
 </details>
 
 
@@ -223,7 +224,7 @@ where
 
 <!--Processing Raw Results -->
 ## Processing Raw Results
-As mentioned in the previous section, the code produces an output file in the Results/Raw_Results directory containing several details of the performance of the algorithm for the instances being solved. Included in the repository is a python script that takes all output files in the Raw_Results that begin with $(prefix_output_files) and producesa folder in the directory "Results\Latex" named $curr_date_curr_time containing: 
+As mentioned in the previous section, the code produces an output file in the "Results\Raw_Results" directory containing several details of the performance of the algorithm for the instances being solved. Included in the repository is a python script that takes all output files in the Raw_Results that begin with $(prefix_output_files) and producesa folder in the directory "Results\Latex" named $curr_date_curr_time containing: 
 * csv files divided by problem type (capacitated/uncapacitated and p-median/fixed cost)
 * a .tex file with the results to be copied and pasted to Latex.
 
