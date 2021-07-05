@@ -2,4 +2,4 @@
 cd src
 make clean
 make
-cp BCHLPSA ../
+cp B4QFL ../
