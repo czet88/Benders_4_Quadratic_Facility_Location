@@ -36,10 +36,36 @@
 </p>
 
 
+<!-- TABLE OF CONTENTS -->
+<details open="open">
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#dependencies">Dependencies</a>
+    </li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <ul>
+        <li><a href="#windows">Windows</a></li>
+        <li><a href="#linux">Linux</a></li>
+      </ul>
+    <li><a href="#code-details">Code Details</a></li>
+    <ul>
+        <li><a href="#folder-structure">Folder Structure</a></li>
+        <li><a href="#compilation">Compilation</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#input-file-format">Input File Format</a></li>
+        <li><a href="#output-file-format">Output File Format</a></li>
+      </ul>
+  </ol>
+</details>
 
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
+
+<!--abouttheproject-->
+## About the project
 This project contains, to the best of our knowledge, the fastest solver of a well-benchmarked set of non-convex quadratic facility location problems known as the AP and I instances of single-allocation hub location problems. The solution method generalizes to any quadratic facility location problem with single assignments. The repository is structured for fast setup both in Windows (using Visual Studio 2019) and Linux (using bash scripts).   
 
 The components that make our algorithm fast are:
