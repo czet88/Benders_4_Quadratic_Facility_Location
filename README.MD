@@ -221,6 +221,32 @@ where
 * CPUFLP is the **time in seconds** taken to solve the linear estimation MILP
 * CPUGAss is the  **time in seconds** spent solving generalized assignment problems in the heuristic phase of the algorithm
 
+<!--Processing Raw Results -->
+## Processing Raw Results
+As mentioned in the previous section, the code produces an output file in the Results/Raw_Results directory containing several details of the performance of the algorithm for the instances being solved. Included in the repository is a python script that takes all output files in the Raw_Results that begin with $(prefix_output_files) and producesa folder in the directory "Results\Latex" named $curr_date_curr_time containing: 
+* csv files divided by problem type (capacitated/uncapacitated and p-median/fixed cost)
+* a .tex file with the results to be copied and pasted to Latex.
+
+Currently the fields considered in this output are:
+```
+Instance;UB;CPU_all;Rel_Heur_Dev;Num_fixed;Rel_Time_Root;BBnodes
+```
+where 
+* Rel_Heur_Dev is the relative deviation of the root node's heuristic solution and the optimal solution. It is calculated as  100 * (UB-PreUB]) /UB
+* Rel_Time_Root is the percentage of solutin time spent at the root node. It is calculated as  100 * (CPU_Pre]) /CPU_all
+* The rest are the same as detailed in the previous section <a href="#output-file-format">Output File Format</a>
+
+For portability, we created python requirements.txt file that contains all dependencies. We recommend the use of a python virtual environment so as to avoid potential version conflicts. The python script may be executed using the following commands in **Linux** or through git bash on **Windows**.
+
+```
+cd Results
+python -m venv .venv
+source .venv/Scripts/activate
+pip install -r requirements.txt
+python analyze_results.py [prefix_output_files]
+```
+
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
