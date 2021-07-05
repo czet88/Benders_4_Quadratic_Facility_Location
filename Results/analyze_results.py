@@ -61,8 +61,8 @@ def split_dataframe_by_case(df_full):
     # List of conditional statements
     uncap_cond = df_full['Cap'] == 0
     cap_cond = df_full['Cap'] == 1
-    fix_charge_cond = df_full['hybrid'] == 1
-    p_med_cond = df_full['hybrid'] == 0
+    fix_charge_cond = df_full['fixed_costs'] == 1
+    p_med_cond = df_full['p_median_constr'] == 1
 
     df_dict = {}
 
