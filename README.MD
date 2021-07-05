@@ -59,8 +59,8 @@
         <li><a href="#input-file-format">Input File Format</a></li>
         <li><a href="#output-file-format">Output File Format</a></li>
       </ul>
-  </ol>
-  <li><a href="#processing-raw-results">Processing Raw Results</a></li>
+    <li><a href="#processing-raw-results">Processing Raw Results</a></li>
+  </ol>  
 </details>
 
 
