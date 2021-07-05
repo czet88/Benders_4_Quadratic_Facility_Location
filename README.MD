@@ -26,7 +26,7 @@
 <br />
 <p align="center">
   
-  <h3 align="center">An Exact Algorithm for Large-Scale Non-Convex Facility Location</h3>
+  <h3 align="center">An Exact Algorithm for Large-Scale Non-Convex Quadratic Facility Location</h3>
 
   <p align="center">
     Source code for the paper authored by Ivan Contreras, Carlos A. Zetina, and Sachin Jayaswal 
