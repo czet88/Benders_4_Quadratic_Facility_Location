@@ -390,7 +390,7 @@ int CFLP_reduced_model(int count_c, ZVAL *z_cand, int *assigmnents, int *open_pl
 	free(sense);
 	free(rhs);
 	//Add exactly p_hubs
-	if (w_p_median_constr==0) {
+	if (w_p_median_constr==1) {
 		numrows = 1;
 		numnz = count_c;
 		d_vector(&rhs, numrows, "open_cplex:2");

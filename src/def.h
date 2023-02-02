@@ -208,7 +208,7 @@ bool read_heur_cl_param(const char*);
  int APset;
  int Capacitated_instances; //Indicator of whether the instance is capacitated or not.
  int p_hubs;//How many hubs
- int w_p_median_constr;//Are we doing both p_hubs and fixed costs? if w_p_median_constr==1 then we have only fixedcosts if 0 then have no fixed costs if w_p_median_constr==3 then we have both
+ int w_p_median_constr;//Are we enforcing a fixed number of hubs? 1 is yes 0 means no
  int w_fixed_costs;//Do we consider the fixed costs
  int missed;//Number of times we couldn't solve subproblem
  int vers; //To control which version is being tested vers=-1 is use everything.
