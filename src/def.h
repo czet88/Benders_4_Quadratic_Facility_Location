@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #define ABS(x) (((x) > 0 ) ? (x) : -(x))	
 #define getrandom( min, max ) ((rand() % (int) (((max)+1)-(min)))+(min))
-#define MAX_DOUBLE  10000000000
+#define MAX_DOUBLE  1000000000000000000000000000000000000
 // Tolerances that we keep for the LP bounds
 #define epsilon_LP_Pre  0.005
 #define epsilon_LP_BB  0.5
